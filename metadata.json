@@ -1,0 +1,6 @@
+{
+  "name": "TMS Parque Astur - Digital Cinema",
+  "description": "Theater Management System (TMS) para control de 10 salas de cine digital con servidores GDC y Dolby, librerías FTP centralizadas y protección de ingesta en reproducción.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

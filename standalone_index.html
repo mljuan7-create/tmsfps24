@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TMS Parque Astur - Theater Management System</title>
+  <!-- Tailwind CSS CDN para cabinas de proyección (sin build tools) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            dci: {
+              dark: '#090d16',
+              panel: '#0f141f',
+              border: '#1f293d',
+              playing: '#dc2626',
+              idle: '#10b981',
+              cinity: '#f97316'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #080c14;
+      color: #e2e8f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #26324a; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b4d70; }
+  </style>
+</head>
+<body class="min-h-screen p-4 sm:p-6 pb-24 text-zinc-100 selection:bg-red-900 selection:text-white">
+
+  <!-- CABECERA SUPERIOR TMS PARQUE ASTUR -->
+  <header class="max-w-7xl mx-auto pb-4 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-red-950/80 border border-red-700 flex items-center justify-center text-red-400 font-bold text-lg shadow-lg">
+        PA
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-bold text-white tracking-tight font-mono">
+            TMS PARQUE ASTUR • FASE 2: GESTIÓN DE CONTENIDOS
+          </h1>
+          <span class="px-2 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800 text-[10px] font-bold">
+            DOLBY XSD COMPLIANT
+          </span>
+        </div>
+        <p class="text-xs text-zinc-400">
+          10 Salas Digital Cinema • GDC SR-6400C (Sala 1 CINITY) & Dolby DSS220 (Salas 2-10) • Christie / NEC • Dolby CP850/CP750
+        </p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div class="hidden md:flex flex-col text-right text-[11px] text-zinc-400 border-r border-zinc-800 pr-3">
+        <span class="text-emerald-400 font-semibold">● Red DCI: 10.100.47.0/24</span>
+        <span>FTPs: Ymagis (.4) | Deluxe (.2) | MovieTransit (.111)</span>
+      </div>
+      <button
+        onclick="toggleColaDrawer()"
+        class="px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold border border-zinc-700 flex items-center gap-1.5 transition cursor-pointer"
+      >
+        <span>Cola Ingestas</span>
+        <span id="badge-cola-count" class="px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-200 text-[10px]">0</span>
+      </button>
+      <button
+        onclick="abrirModalIngesta()"
+        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-2 transition cursor-pointer"
+      >
+        <span>📥 Ingesta</span>
+        <span id="header-btn-count" class="px-1.5 py-0.2 rounded bg-emerald-900 text-emerald-200 text-[10px]">2 CPL</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- BANNER DE ALERTA CRÍTICA EN ROJO (REGLA DE PROTECCIÓN DCI) -->
+  <div id="banner-alerta-roja" class="max-w-7xl mx-auto mt-4 hidden animate-in fade-in duration-200">
+    <div class="p-4 rounded-xl bg-red-950/90 border-2 border-red-600 text-red-100 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <div class="p-2 rounded-lg bg-red-900/80 border border-red-500 text-red-200 text-lg shrink-0">
+          ⚠️
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold uppercase bg-red-600 text-white px-2 py-0.5 rounded tracking-wider">
+              Regla de Protección Crítica DCI
+            </span>
+            <span class="text-xs text-red-300 font-mono">SQLite: 'cola_ingestas' → PENDIENTE</span>
+          </div>
+          <h2 id="texto-alerta-roja" class="text-sm sm:text-base font-bold text-white mt-1">
+            Servidor en proyección. Ingesta diferida encolada automáticamente para evitar parones de lectura
+          </h2>
+          <p id="subtexto-alerta-roja" class="text-xs text-red-200/90 mt-0.5">
+            El ancho de banda del bus RAID se reserva íntegramente al lector JPEG2000. La transferencia se ejecutará al pasar la sala a IDLE.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 self-end sm:self-center">
+        <button
+          onclick="toggleColaDrawer()"
+          class="px-3 py-1.5 bg-red-900 hover:bg-red-800 text-white rounded-lg text-xs font-bold transition cursor-pointer"
+        >
+          Ver Cola
+        </button>
+        <button
+          onclick="cerrarAlertaRoja()"
+          class="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs transition cursor-pointer"
+        >
+          Descartar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA DE ACCIONES RÁPIDAS DE CABINA -->
+  <div class="max-w-7xl mx-auto mt-4 p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+    <div class="flex items-center gap-2 text-zinc-300">
+      <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+      <span class="font-bold text-zinc-200">Prueba Directa de Cabina:</span>
+      <span class="text-zinc-400">Verifique la regla crítica (Sala en PLAYING + ingesta 'ahora') con 1 clic:</span>
+    </div>
+    <button
+      onclick="probarReglaCriticaDirecta()"
+      class="px-3 py-1.5 rounded-lg bg-red-950 hover:bg-red-900 text-red-300 border border-red-700 font-bold transition flex items-center gap-1.5 cursor-pointer"
+    >
+      <span>⚡ Disparar Alerta Roja (Ingesta en PLAYING)</span>
+    </button>
+  </div>
+
+  <!-- SECCIÓN SUPERIOR: GRID DE 10 SALAS -->
+  <section class="max-w-7xl mx-auto mt-6">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h2 class="text-sm font-bold text-zinc-200 uppercase tracking-wider font-mono">
+          CABINA DE PROYECCIÓN (10 SALAS)
+        </h2>
+        <p class="text-[11px] text-zinc-400">
+          Supervisión de servidores, proyectores y almacenamiento libre. Clic en PLAYING/IDLE para conmutar estado.
+        </p>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <button onclick="seleccionarTodasSalas(true)" class="text-zinc-400 hover:text-zinc-200">Todas</button>
+        <span class="text-zinc-600">•</span>
+        <button onclick="seleccionarTodasSalas(false)" class="text-zinc-400 hover:text-zinc-200">Ninguna</button>
+      </div>
+    </div>
+
+    <!-- Grid dinámico de 10 salas -->
+    <div id="grid-salas" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      <!-- Inyectado por JS -->
+    </div>
+  </section>
+
+  <!-- SECCIÓN INFERIOR: GESTOR DE CONTENIDOS (CATEGORÍAS COLAPSABLES FTR Y TLR) -->
+  <section class="max-w-7xl mx-auto mt-8 pt-6 border-t border-zinc-800">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div>
+        <h2 class="text-base sm:text-lg font-bold text-white font-mono flex items-center gap-2">
+          CONTENIDOS DCI (LIBRERÍAS FTP CENTRALES)
+          <span class="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-normal">
+            LMS Ymagis, Box By Deluxe, MovieTransit
+          </span>
+        </h2>
+        <p class="text-xs text-zinc-400">
+          Seleccione DCPs para transferir hacia los servidores de sala. Organizados en categorías colapsables.
+        </p>
+      </div>
+      <button
+        onclick="abrirModalIngesta()"
+        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-2 transition cursor-pointer"
+      >
+        <span>📥 Ingestar Seleccionados</span>
+        <span id="btn-count-inferior" class="px-2 py-0.5 rounded bg-emerald-900 text-emerald-200 font-mono">2</span>
+      </button>
+    </div>
+
+    <!-- CATEGORÍA 1: FTR - Feature (Películas / Largometrajes) -->
+    <div class="mb-4 rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden shadow-lg">
+      <div
+        onclick="toggleCarpeta('ftr')"
+        class="p-3.5 bg-zinc-900 hover:bg-zinc-850 cursor-pointer flex items-center justify-between border-b border-zinc-800 transition select-none"
+      >
+        <div class="flex items-center gap-2.5">
+          <span id="flecha-ftr" class="text-zinc-400 text-sm transform transition">▼</span>
+          <span class="font-bold text-sm text-red-400 font-mono">📁 &apos;FTR - Feature&apos; (Películas / Largometrajes)</span>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-900">
+            DCP Largos
+          </span>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-zinc-400">
+          <span>4 títulos • 675.0 GB</span>
+          <button onclick="event.stopPropagation(); marcarTodosTipo('FTR')" class="text-emerald-400 hover:underline text-[11px]">Sel. Todos</button>
+        </div>
+      </div>
+
+      <div id="contenedor-ftr" class="p-3 space-y-2">
+        <!-- Película CONAN29 (51 GB) -->
+        <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" value="1" checked class="contenido-cb accent-emerald-500 w-4 h-4" onchange="actualizarContadorSeleccionados()">
+            <div>
+              <div class="font-bold text-white text-sm font-mono flex items-center gap-2">
+                <span>CONAN29</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">S-239 (Scope)</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">5.1</span>
+              </div>
+              <div class="text-[11px] text-zinc-400 mt-0.5">
+                Origen: Box By Deluxe (192.168.168.2) • CPL: urn:uuid:8b9f1a23-4c5d... • Abierto
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono">Sin KDM</span>
+            <span class="text-sm font-bold text-sky-400 font-mono">51.0 GB</span>
+          </div>
+        </label>
+
+        <!-- Película AFuego (167 GB - Requiere KDM) -->
+        <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" value="2" checked class="contenido-cb accent-emerald-500 w-4 h-4" onchange="actualizarContadorSeleccionados()">
+            <div>
+              <div class="font-bold text-white text-sm font-mono flex items-center gap-2">
+                <span>AFuego</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">F-185 (Flat)</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">7.1</span>
+              </div>
+              <div class="text-[11px] text-zinc-400 mt-0.5">
+                Origen: LMS Ymagis (192.168.168.4) • CPL: urn:uuid:c3d4e5f6-7a8b...
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 font-mono font-bold flex items-center gap-1">
+              🔒 REQUIERE KDM
+            </span>
+            <span class="text-sm font-bold text-sky-400 font-mono">167.0 GB</span>
+          </div>
+        </label>
+
+        <!-- GLADIATOR_II (215 GB) -->
+        <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" value="3" class="contenido-cb accent-emerald-500 w-4 h-4" onchange="actualizarContadorSeleccionados()">
+            <div>
+              <div class="font-bold text-white text-sm font-mono flex items-center gap-2">
+                <span>GLADIATOR_II</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">Scope</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-800">ATMOS</span>
+              </div>
+              <div class="text-[11px] text-zinc-400 mt-0.5">
+                Origen: MovieTransit (192.168.168.111) • Dolby Atmos
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 font-mono">KDM Válida</span>
+            <span class="text-sm font-bold text-sky-400 font-mono">215.0 GB</span>
+          </div>
+        </label>
+
+        <!-- DUNE_PART_TWO (242 GB) -->
+        <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" value="4" class="contenido-cb accent-emerald-500 w-4 h-4" onchange="actualizarContadorSeleccionados()">
+            <div>
+              <div class="font-bold text-white text-sm font-mono flex items-center gap-2">
+                <span>DUNE_PART_TWO</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">Scope</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-800">ATMOS</span>
+              </div>
+              <div class="text-[11px] text-zinc-400 mt-0.5">
+                Origen: Box By Deluxe (192.168.168.2)
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 font-mono">KDM Válida</span>
+            <span class="text-sm font-bold text-sky-400 font-mono">242.0 GB</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- CATEGORÍA 2: TLR - Trailer (Trailers y Logos CINITY) -->
+    <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden shadow-lg">
+      <div
+        onclick="toggleCarpeta('tlr')"
+        class="p-3.5 bg-zinc-900 hover:bg-zinc-850 cursor-pointer flex items-center justify-between border-b border-zinc-800 transition select-none"
+      >
+        <div class="flex items-center gap-2.5">
+          <span id="flecha-tlr" class="text-zinc-400 text-sm transform transition">▼</span>
+          <span class="font-bold text-sm text-amber-400 font-mono">📁 &apos;TLR - Trailer&apos; (Trailers y Logos CINITY)</span>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-900">
+            DCI Cortometrajes / Logos
+          </span>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-zinc-400">
+          <span>4 títulos • 8.4 GB</span>
+          <button onclick="event.stopPropagation(); marcarTodosTipo('TLR')" class="text-emerald-400 hover:underline text-[11px]">Sel. Todos</button>
+        </div>
+      </div>
+
+      <div id="contenedor-tlr" class="p-3 space-y-2">
+        <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" value="5" class="contenido-cb accent-emerald-500 w-4 h-4" onchange="actualizarContadorSeleccionados()">
+            <div>
+              <div class="font-bold text-white text-sm font-mono flex items-center gap-2">
+                <span>CINITY_EXPERIENCE_PROMO_TLR</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-orange-950 text-orange-300 border border-orange-800">✨ CINITY HFR</span>
+              </div>
+              <div class="text-[11px] text-zinc-400 mt-0.5">
+                Origen: LMS Ymagis (192.168.168.4) • HFR 4K Scope • Dolby Atmos
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono">Abierto</span>
+            <span class="text-sm font-bold text-sky-400 font-mono">2.8 GB</span>
+          </div>
+        </label>
+
+        <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" value="6" class="contenido-cb accent-emerald-500 w-4 h-4" onchange="actualizarContadorSeleccionados()">
+            <div>
+              <div class="font-bold text-white text-sm font-mono flex items-center gap-2">
+                <span>CINITY_BRAND_LOGO_HFR_4K</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-orange-950 text-orange-300 border border-orange-800">✨ CINITY LOGO</span>
+              </div>
+              <div class="text-[11px] text-zinc-400 mt-0.5">
+                Origen: Box By Deluxe (192.168.168.2) • Flat 1.85:1
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono">Abierto</span>
+            <span class="text-sm font-bold text-sky-400 font-mono">1.4 GB</span>
+          </div>
+        </label>
+
+        <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" value="7" class="contenido-cb accent-emerald-500 w-4 h-4" onchange="actualizarContadorSeleccionados()">
+            <div>
+              <div class="font-bold text-white text-sm font-mono">AFUEGO_TEASER_TLR1</div>
+              <div class="text-[11px] text-zinc-400 mt-0.5">Origen: LMS Ymagis (192.168.168.4) • Flat • 5.1</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono">Abierto</span>
+            <span class="text-sm font-bold text-sky-400 font-mono">1.9 GB</span>
+          </div>
+        </label>
+
+        <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" value="8" class="contenido-cb accent-emerald-500 w-4 h-4" onchange="actualizarContadorSeleccionados()">
+            <div>
+              <div class="font-bold text-white text-sm font-mono">CONAN29_OFFICIAL_TRAILER_2</div>
+              <div class="text-[11px] text-zinc-400 mt-0.5">Origen: MovieTransit (192.168.168.111) • Scope • 5.1</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono">Abierto</span>
+            <span class="text-sm font-bold text-sky-400 font-mono">2.3 GB</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOTÓN FLOTANTE INFERIOR '📥 Ingesta' -->
+  <div class="fixed bottom-6 right-6 z-40">
+    <button
+      onclick="abrirModalIngesta()"
+      class="flex items-center gap-3 px-5 py-3 rounded-full font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xl ring-4 ring-emerald-500/20 hover:scale-105 transition cursor-pointer"
+    >
+      <span class="text-base">📥</span>
+      <span>Ingesta</span>
+      <span id="btn-flotante-count" class="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-mono text-xs">
+        2 CPL
+      </span>
+    </button>
+  </div>
+
+  <!-- VENTANA MODAL POP-UP DE INGESTA DCI -->
+  <div id="modal-ingesta" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-zinc-950 border border-zinc-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+      
+      <!-- Header Modal -->
+      <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2 rounded-lg bg-emerald-950/80 border border-emerald-700 text-emerald-400 text-base">📥</span>
+          <div>
+            <h3 class="text-base font-bold text-white font-mono">VENTANA DE INGESTA DCI (PARQUE ASTUR)</h3>
+            <p class="text-[11px] text-zinc-400">Configure las salas destino y la ventana de transferencia</p>
+          </div>
+        </div>
+        <button onclick="cerrarModalIngesta()" class="text-zinc-400 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Paso 1: Lista de las 10 salas con su almacenamiento libre en GB -->
+      <div>
+        <div class="flex justify-between text-xs text-zinc-400 mb-2">
+          <span class="font-bold text-zinc-200">1. Seleccione las Salas Destino (Almacenamiento Libre):</span>
+          <span class="text-emerald-400 font-mono font-bold">10 Salas Disponibles</span>
+        </div>
+        <div id="modal-salas-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-52 overflow-y-auto p-2 bg-zinc-900/60 rounded-xl border border-zinc-800">
+          <!-- Generado dinámicamente por renderModalSalas() -->
+        </div>
+      </div>
+
+      <!-- Paso 2: Preguntar la hora (Ahora o Posponer) de forma idéntica a las capturas -->
+      <div class="bg-zinc-900/90 p-4 rounded-xl border border-zinc-800 space-y-3">
+        <span class="text-xs font-bold text-zinc-200 block font-mono">
+          2. ¿Cuándo desea ejecutar la ingesta?
+        </span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label class="p-3 rounded-lg bg-zinc-950 border border-zinc-700 hover:border-zinc-500 flex items-start gap-2.5 cursor-pointer">
+            <input type="radio" name="modal_hora_ingesta" value="ahora" checked class="accent-emerald-500 mt-1">
+            <div>
+              <span class="text-xs font-bold text-white block">⚡ Ahora (Inmediata)</span>
+              <span class="text-[10px] text-zinc-400 block mt-0.5">
+                Inicia al instante si la sala está IDLE. Si está en PLAYING, se difiere automáticamente.
+              </span>
+            </div>
+          </label>
+
+          <label class="p-3 rounded-lg bg-zinc-950 border border-zinc-700 hover:border-zinc-500 flex items-start gap-2.5 cursor-pointer">
+            <input type="radio" name="modal_hora_ingesta" value="posponer" class="accent-sky-500 mt-1">
+            <div>
+              <span class="text-xs font-bold text-white block">🕒 Posponer (Programar diferida)</span>
+              <span class="text-[10px] text-zinc-400 block mt-0.5">
+                Ventana nocturna a las 02:00 o tras cierre de taquilla.
+              </span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="flex justify-end gap-3 pt-2 border-t border-zinc-800/80">
+        <button
+          onclick="cerrarModalIngesta()"
+          class="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          onclick="confirmarYEjectuarIngesta()"
+          class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg transition cursor-pointer"
+        >
+          Confirmar e Ingestar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRAWER LATERAL: COLA DE INGESTAS (CON ESTADOS XSD DOLBY) -->
+  <div id="drawer-cola" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-end hidden">
+    <div class="w-full max-w-xl bg-zinc-950 border-l border-zinc-800 h-full p-5 overflow-y-auto flex flex-col justify-between shadow-2xl">
+      <div>
+        <div class="flex items-center justify-between pb-4 border-b border-zinc-800">
+          <div class="flex items-center gap-2">
+            <span class="p-2 rounded bg-sky-950 text-sky-400 border border-sky-800 font-bold">📥</span>
+            <div>
+              <h3 class="text-base font-bold text-white font-mono">COLA DE INGESTAS (SQLITE)</h3>
+              <p class="text-[11px] text-zinc-400 font-mono">Tabla: &apos;cola_ingestas&apos; • cinema_tms.db</p>
+            </div>
+          </div>
+          <button onclick="toggleColaDrawer()" class="text-zinc-400 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <div id="lista-cola-items" class="mt-4 space-y-3">
+          <!-- Inyectado dinámicamente -->
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-zinc-800 flex justify-between items-center text-xs text-zinc-500 font-mono">
+        <span>TMS Parque Astur v2.1</span>
+        <button onclick="toggleColaDrawer()" class="px-4 py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOTOR JAVASCRIPT DEL CLIENTE TMS -->
+  <script>
+    // 1. INFRAESTRUCTURA DE CABINA REAL DE PARQUE ASTUR
+    let salas = [
+      { id: 1, nombre: 'Sala 1 (Laser CINITY)', server: 'GDC SR-6400C (10.100.47.11)', proj: 'CHRISTIE CP4440-RGB (3002)', sound: 'DOLBY CP850', estado: 'PLAYING', libre_gb: 1420.5, total_gb: 4000.0, cpl: 'CONAN29_FTR_S_ES-ES_51_4K', restante_min: 48 },
+      { id: 2, nombre: 'Sala 2', server: 'DOLBY DSS220 (10.100.47.21:61408)', proj: 'NEC NC2000C (7000)', sound: 'DOLBY CP750', estado: 'IDLE', libre_gb: 850.0, total_gb: 2000.0, cpl: null, restante_min: 0 },
+      { id: 3, nombre: 'Sala 3', server: 'DOLBY DSS220 (10.100.47.31:61408)', proj: 'NEC NC2000C (7000)', sound: 'DOLBY CP750', estado: 'PLAYING', libre_gb: 310.2, total_gb: 2000.0, cpl: 'AFuego_FTR_F-185_ES_51', restante_min: 72 },
+      { id: 4, nombre: 'Sala 4', server: 'DOLBY DSS220 (10.100.47.41:61408)', proj: 'NEC NC2000C (7000)', sound: 'DOLBY CP750', estado: 'IDLE', libre_gb: 1120.0, total_gb: 2000.0, cpl: null, restante_min: 0 },
+      { id: 5, nombre: 'Sala 5', server: 'DOLBY DSS220 (10.100.47.51:61408)', proj: 'NEC NC2000C (7000)', sound: 'DOLBY CP750', estado: 'IDLE', libre_gb: 940.8, total_gb: 2000.0, cpl: null, restante_min: 0 },
+      { id: 6, nombre: 'Sala 6', server: 'DOLBY DSS220 (10.100.47.61:61408)', proj: 'NEC NC2000C (7000)', sound: 'DOLBY CP750', estado: 'PLAYING', libre_gb: 480.0, total_gb: 2000.0, cpl: 'GLADIATOR_II_FTR_S', restante_min: 15 },
+      { id: 7, nombre: 'Sala 7', server: 'DOLBY DSS220 (10.100.47.71:61408)', proj: 'NEC NC2000C (7000)', sound: 'DOLBY CP750', estado: 'IDLE', libre_gb: 1310.0, total_gb: 2000.0, cpl: null, restante_min: 0 },
+      { id: 8, nombre: 'Sala 8', server: 'DOLBY DSS220 (10.100.47.81:61408)', proj: 'NEC NC2000C (7000)', sound: 'DOLBY CP750', estado: 'IDLE', libre_gb: 620.5, total_gb: 2000.0, cpl: null, restante_min: 0 },
+      { id: 9, nombre: 'Sala 9', server: 'DOLBY DSS220 (10.100.47.91:61408)', proj: 'NEC NC2000C (7000)', sound: 'DOLBY CP750', estado: 'IDLE', libre_gb: 980.2, total_gb: 2000.0, cpl: null, restante_min: 0 },
+      { id: 10, nombre: 'Sala 10', server: 'DOLBY DSS220 (10.100.47.101:61408)', proj: 'NEC NC2000C (7000)', sound: 'DOLBY CP750', estado: 'PLAYING', libre_gb: 240.0, total_gb: 2000.0, cpl: 'DUNE_PART2_FTR_S', restante_min: 95 }
+    ];
+
+    let contenidos = [
+      { id: 1, titulo: 'CONAN29', tipo: 'FTR', tamano_gb: 51.0, requiere_kdm: false, fuente: 'Box By Deluxe (192.168.168.2)' },
+      { id: 2, titulo: 'AFuego', tipo: 'FTR', tamano_gb: 167.0, requiere_kdm: true, fuente: 'LMS Ymagis (192.168.168.4)' },
+      { id: 3, titulo: 'GLADIATOR_II', tipo: 'FTR', tamano_gb: 215.0, requiere_kdm: true, fuente: 'MovieTransit (192.168.168.111)' },
+      { id: 4, titulo: 'DUNE_PART_TWO', tipo: 'FTR', tamano_gb: 242.0, requiere_kdm: true, fuente: 'Box By Deluxe (192.168.168.2)' },
+      { id: 5, titulo: 'CINITY_EXPERIENCE_PROMO_TLR', tipo: 'TLR', tamano_gb: 2.8, requiere_kdm: false, fuente: 'LMS Ymagis (192.168.168.4)' },
+      { id: 6, titulo: 'CINITY_BRAND_LOGO_HFR_4K', tipo: 'TLR', tamano_gb: 1.4, requiere_kdm: false, fuente: 'Box By Deluxe (192.168.168.2)' },
+      { id: 7, titulo: 'AFUEGO_TEASER_TLR1', tipo: 'TLR', tamano_gb: 1.9, requiere_kdm: false, fuente: 'LMS Ymagis (192.168.168.4)' },
+      { id: 8, titulo: 'CONAN29_OFFICIAL_TRAILER_2', tipo: 'TLR', tamano_gb: 2.3, requiere_kdm: false, fuente: 'MovieTransit (192.168.168.111)' }
+    ];
+
+    let colaIngestas = [];
+
+    // RENDERIZAR GRID DE 10 SALAS
+    function renderSalasGrid() {
+      const grid = document.getElementById('grid-salas');
+      grid.innerHTML = salas.map(s => {
+        const isPlaying = s.estado === 'PLAYING';
+        const isCinity = s.id === 1;
+        const pctLibre = Math.round((s.libre_gb / s.total_gb) * 100);
+
+        return `
+          <div class="p-3.5 rounded-xl bg-zinc-900 border ${isPlaying ? 'border-red-900/80' : 'border-zinc-800'} text-xs flex flex-col justify-between shadow-md relative overflow-hidden">
+            ${isCinity ? '<div class="absolute top-0 right-0 px-2 py-0.2 bg-orange-600/30 border-b border-l border-orange-500/40 text-orange-400 text-[9px] font-bold rounded-bl font-mono">CINITY</div>' : ''}
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-bold text-white font-mono text-sm">${s.nombre}</span>
+                <button
+                  onclick="toggleEstadoSala(${s.id})"
+                  title="Conmutar PLAYING/IDLE para pruebas"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold font-mono transition cursor-pointer ${isPlaying ? 'bg-red-950 text-red-400 border border-red-800 animate-pulse' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'}"
+                >
+                  ${s.estado}
+                </button>
+              </div>
+
+              <div class="text-[10px] text-zinc-400 space-y-0.5 font-mono">
+                <div class="truncate text-zinc-300">${s.server}</div>
+                <div class="truncate text-zinc-500">${s.proj}</div>
+                <div class="truncate text-zinc-500">${s.sound}</div>
+              </div>
+            </div>
+
+            <div class="mt-3 pt-2 border-t border-zinc-800/80">
+              <div class="flex justify-between text-[10px] font-mono mb-1">
+                <span class="text-zinc-500">Disco Libre:</span>
+                <span class="font-bold ${s.libre_gb < 400 ? 'text-amber-400' : 'text-emerald-400'}">${s.libre_gb.toFixed(0)} GB (${pctLibre}%)</span>
+              </div>
+              <div class="w-full bg-zinc-950 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+                <div class="h-full ${s.libre_gb < 400 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width: ${pctLibre}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // CONMUTAR ESTADO PLAYING <-> IDLE
+    function toggleEstadoSala(id) {
+      const s = salas.find(x => x.id === id);
+      if (s) {
+        s.estado = s.estado === 'PLAYING' ? 'IDLE' : 'PLAYING';
+        s.restante_min = s.estado === 'PLAYING' ? 45 : 0;
+        renderSalasGrid();
+        renderModalSalas();
+      }
+    }
+
+    // CARPETAS COLAPSABLES FTR / TLR
+    function toggleCarpeta(tipo) {
+      const contenedor = document.getElementById(`contenedor-${tipo}`);
+      const flecha = document.getElementById(`flecha-${tipo}`);
+      const isHidden = contenedor.classList.contains('hidden');
+      if (isHidden) {
+        contenedor.classList.remove('hidden');
+        flecha.style.transform = 'rotate(0deg)';
+      } else {
+        contenedor.classList.add('hidden');
+        flecha.style.transform = 'rotate(-90deg)';
+      }
+    }
+
+    function marcarTodosTipo(tipo) {
+      const targetIds = contenidos.filter(c => c.tipo === tipo).map(c => c.id.toString());
+      document.querySelectorAll('.contenido-cb').forEach(cb => {
+        if (targetIds.includes(cb.value)) cb.checked = true;
+      });
+      actualizarContadorSeleccionados();
+    }
+
+    function actualizarContadorSeleccionados() {
+      const count = document.querySelectorAll('.contenido-cb:checked').length;
+      document.getElementById('header-btn-count').innerText = `${count} CPL`;
+      document.getElementById('btn-count-inferior').innerText = count;
+      document.getElementById('btn-flotante-count').innerText = `${count} CPL`;
+    }
+
+    // VENTANA MODAL DE INGESTA
+    function abrirModalIngesta() {
+      renderModalSalas();
+      document.getElementById('modal-ingesta').classList.remove('hidden');
+    }
+
+    function cerrarModalIngesta() {
+      document.getElementById('modal-ingesta').classList.add('hidden');
+    }
+
+    function renderModalSalas() {
+      const list = document.getElementById('modal-salas-list');
+      list.innerHTML = salas.map(s => `
+        <label class="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 flex items-center justify-between text-xs cursor-pointer">
+          <div class="flex items-center gap-2.5">
+            <input type="checkbox" value="${s.id}" ${s.id === 1 ? 'checked' : ''} class="modal-sala-cb accent-emerald-500 w-4 h-4">
+            <div>
+              <div class="font-bold text-white font-mono">${s.nombre}</div>
+              <div class="text-[10px] text-zinc-400">${s.server.split(' ')[0]} ${s.server.split(' ')[1]}</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-mono font-bold text-emerald-400">${s.libre_gb.toFixed(0)} GB</span>
+            <span class="text-[9px] block px-1.5 py-0.2 rounded font-mono ${s.estado === 'PLAYING' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-zinc-800 text-zinc-400'}">${s.estado}</span>
+          </div>
+        </label>
+      `).join('');
+    }
+
+    function cerrarAlertaRoja() {
+      document.getElementById('banner-alerta-roja').classList.add('hidden');
+    }
+
+    function toggleColaDrawer() {
+      const drawer = document.getElementById('drawer-cola');
+      drawer.classList.toggle('hidden');
+      renderColaDrawer();
+    }
+
+    // CONFIRMAR E INGESTAR (CON REGLA DE PROTECCIÓN CRÍTICA DCI)
+    function confirmarYEjectuarIngesta() {
+      const horaSeleccionada = document.querySelector('input[name="modal_hora_ingesta"]:checked').value;
+      const salasSeleccionadasIds = Array.from(document.querySelectorAll('.modal-sala-cb:checked')).map(cb => parseInt(cb.value));
+      const contenidosSeleccionadosIds = Array.from(document.querySelectorAll('.contenido-cb:checked')).map(cb => parseInt(cb.value));
+
+      if (salasSeleccionadasIds.length === 0) {
+        alert('Seleccione al menos una sala de destino.');
+        return;
+      }
+      if (contenidosSeleccionadosIds.length === 0) {
+        alert('Seleccione al menos un contenido DCI.');
+        return;
+      }
+
+      cerrarModalIngesta();
+
+      // REGLA DE PROTECCIÓN CRÍTICA DCI:
+      // Si la hora es 'ahora' y alguna sala destino está en 'PLAYING'
+      let haySalaEnPlaying = false;
+      salasSeleccionadasIds.forEach(id => {
+        const s = salas.find(x => x.id === id);
+        if (s && s.estado === 'PLAYING') {
+          haySalaEnPlaying = true;
+        }
+      });
+
+      const fechaHora = new Date().toLocaleTimeString();
+
+      if (horaSeleccionada === 'ahora' && haySalaEnPlaying) {
+        // ACTIVAR ADVERTENCIA ROJA EXACTA
+        const banner = document.getElementById('banner-alerta-roja');
+        const texto = document.getElementById('texto-alerta-roja');
+        texto.innerText = "Servidor en proyección. Ingesta diferida encolada automáticamente para evitar parones de lectura";
+        banner.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Encolar en estado PENDIENTE diferida
+        salasSeleccionadasIds.forEach(sId => {
+          const s = salas.find(x => x.id === sId);
+          contenidosSeleccionadosIds.forEach(cId => {
+            const c = contenidos.find(x => x.id === cId);
+            colaIngestas.unshift({
+              id: Date.now() + Math.random(),
+              sala: s.nombre,
+              contenido: c.titulo,
+              tamano: c.tamano_gb,
+              estado: 'PENDIENTE',
+              dolby_xsd: 'PENDING',
+              hora: `Al finalizar (~${s.restante_min}m)`,
+              progreso: 0,
+              advertencia: 'Servidor en proyección. Ingesta diferida encolada automáticamente para evitar parones de lectura'
+            });
+          });
+        });
+      } else {
+        // Ingesta inmediata permitida o pospuesta
+        salasSeleccionadasIds.forEach(sId => {
+          const s = salas.find(x => x.id === sId);
+          contenidosSeleccionadosIds.forEach(cId => {
+            const c = contenidos.find(x => x.id === cId);
+            const esPospuesta = horaSeleccionada === 'posponer';
+            const nuevoId = Date.now() + Math.random();
+
+            const item = {
+              id: nuevoId,
+              sala: s.nombre,
+              contenido: c.titulo,
+              tamano: c.tamano_gb,
+              estado: esPospuesta ? 'PENDIENTE' : 'PENDING',
+              dolby_xsd: 'PENDING',
+              hora: esPospuesta ? '02:00 (Ventana nocturna)' : 'Inmediata',
+              progreso: 0,
+              advertencia: null
+            };
+            colaIngestas.unshift(item);
+
+            // Si es inmediata en sala IDLE, simular estados reales del XSD de Dolby
+            if (!esPospuesta) {
+              simularCicloDolbyXSD(nuevoId);
+            }
+          });
+        });
+      }
+
+      actualizarBadgeCola();
+    }
+
+    // SIMULADOR DE ESTADOS DOLBY XSD: PENDING -> IN_PROGRESS -> VERIFYING -> FINISHED
+    function simularCicloDolbyXSD(itemId) {
+      setTimeout(() => {
+        const item = colaIngestas.find(x => x.id === itemId);
+        if (item) {
+          item.estado = 'IN_PROGRESS';
+          item.dolby_xsd = 'IN_PROGRESS';
+          item.progreso = 35;
+          renderColaDrawer();
+        }
+      }, 1500);
+
+      setTimeout(() => {
+        const item = colaIngestas.find(x => x.id === itemId);
+        if (item) {
+          item.progreso = 75;
+          renderColaDrawer();
+        }
+      }, 3500);
+
+      setTimeout(() => {
+        const item = colaIngestas.find(x => x.id === itemId);
+        if (item) {
+          item.estado = 'VERIFYING';
+          item.dolby_xsd = 'VERIFYING';
+          item.progreso = 92;
+          renderColaDrawer();
+        }
+      }, 5500);
+
+      setTimeout(() => {
+        const item = colaIngestas.find(x => x.id === itemId);
+        if (item) {
+          item.estado = 'FINISHED';
+          item.dolby_xsd = 'FINISHED';
+          item.progreso = 100;
+          renderColaDrawer();
+        }
+      }, 7500);
+    }
+
+    function renderColaDrawer() {
+      const container = document.getElementById('lista-cola-items');
+      if (colaIngestas.length === 0) {
+        container.innerHTML = '<div class="text-center py-10 text-zinc-500 font-mono text-xs">No hay tareas en la cola de ingestas.</div>';
+        return;
+      }
+
+      container.innerHTML = colaIngestas.map(item => {
+        const isVerifying = item.estado === 'VERIFYING';
+        const isInProgress = item.estado === 'IN_PROGRESS';
+        const isPending = item.estado === 'PENDING' || item.estado === 'PENDIENTE';
+        const isFinished = item.estado === 'FINISHED';
+        const isCritica = !!item.advertencia;
+
+        return `
+          <div class="p-3 rounded-xl border ${isCritica ? 'bg-red-950/40 border-red-600' : isVerifying ? 'bg-purple-950/30 border-purple-600' : isInProgress ? 'bg-sky-950/30 border-sky-600' : isFinished ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-900/80 border-zinc-800'} text-xs font-mono">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-white">${item.sala}</span>
+                <span class="text-zinc-500">→</span>
+                <span class="text-zinc-200 font-semibold">${item.contenido}</span>
+                <span class="text-[10px] text-zinc-400">(${item.tamano} GB)</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isVerifying ? 'bg-purple-950 text-purple-300 border border-purple-600 animate-pulse' : isInProgress ? 'bg-sky-950 text-sky-400 border border-sky-600 animate-pulse' : isCritica ? 'bg-red-950 text-red-300 border border-red-600' : isFinished ? 'bg-emerald-950 text-emerald-400 border border-emerald-700' : 'bg-amber-950 text-amber-400'}">
+                ${item.estado}
+              </span>
+            </div>
+
+            ${isCritica ? `
+              <div class="mt-2 p-2 rounded bg-red-950/80 border border-red-700 text-[11px] text-red-200 flex items-start gap-1.5">
+                <span>⚠️</span>
+                <span>${item.advertencia}</span>
+              </div>
+            ` : ''}
+
+            ${(isInProgress || isVerifying) ? `
+              <div class="mt-2">
+                <div class="flex justify-between text-[10px] text-zinc-400 mb-1">
+                  <span>${isVerifying ? 'Verificando firmas SHA-1 DCI...' : 'Transferencia FTP DCI en curso...'}</span>
+                  <span class="font-bold text-sky-400">${item.progreso}%</span>
+                </div>
+                <div class="w-full bg-zinc-950 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+                  <div class="h-full ${isVerifying ? 'bg-purple-500' : 'bg-sky-500'} transition-all duration-300" style="width: ${item.progreso}%"></div>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function actualizarBadgeCola() {
+      document.getElementById('badge-cola-count').innerText = colaIngestas.length;
+    }
+
+    // PRUEBA RÁPIDA DE CABINA: SALA 1 EN PLAYING + INGESTA 'AHORA'
+    function probarReglaCriticaDirecta() {
+      const sala1 = salas.find(s => s.id === 1);
+      if (sala1 && sala1.estado !== 'PLAYING') {
+        sala1.estado = 'PLAYING';
+        sala1.restante_min = 45;
+        renderSalasGrid();
+      }
+      // Marcar CONAN29
+      document.querySelectorAll('.contenido-cb').forEach(cb => {
+        cb.checked = (cb.value === '1');
+      });
+      actualizarContadorSeleccionados();
+
+      // Abrir modal y seleccionar 'ahora' y Sala 1
+      abrirModalIngesta();
+      document.querySelectorAll('.modal-sala-cb').forEach(cb => {
+        cb.checked = (cb.value === '1');
+      });
+      document.querySelector('input[name="modal_hora_ingesta"][value="ahora"]').checked = true;
+
+      // Disparar confirmación
+      setTimeout(() => {
+        confirmarYEjectuarIngesta();
+      }, 400);
+    }
+
+    // Inicialización al cargar la página
+    renderSalasGrid();
+    actualizarContadorSeleccionados();
+  </script>
+</body>
+</html>
