@@ -51,6 +51,35 @@ export class TMSService {
     return [...this.salas];
   }
 
+  /**
+   * Sincroniza el estado en tiempo real con el backend de Python (FastAPI en :8000)
+   * que consulta a las IPs 10.100.47.x de Dolby y GDC.
+   */
+  public async sincronizarConServidorReal(): Promise<Sala[]> {
+    try {
+      const res = await fetch('/api/salas');
+      if (res.ok) {
+        const salasBackend = await res.json();
+        if (Array.isArray(salasBackend) && salasBackend.length > 0) {
+          this.salas = salasBackend.map((sb: any) => {
+            const actual = this.salas.find((s) => s.id === sb.id);
+            return {
+              ...actual,
+              ...sb,
+              volumen: actual?.volumen ?? 7.0,
+              estado_luces: actual?.estado_luces ?? (sb.estado_reproduccion === 'PLAYING' ? 'CINE' : 'SALA'),
+              lampara_encendida: sb.lampara_encendida ?? actual?.lampara_encendida ?? true,
+            };
+          });
+          this.persist();
+        }
+      }
+    } catch {
+      // Si el backend aún no responde, continúa con los datos locales
+    }
+    return this.getSalas();
+  }
+
   public getContenidos(): {
     todos: Contenido[];
     ftr: Contenido[];
@@ -323,21 +352,57 @@ export class TMSService {
   }
 
   
-  public enviarComando(salaId: number, comando: string): boolean {
+  public enviarComando(salaId: number, comando: string, valorExtra?: number | string): boolean {
     const sala = this.salas.find((s) => s.id === salaId);
     if (!sala) return false;
     
-    if (comando === 'play') sala.estado_reproduccion = 'PLAYING';
-    if (comando === 'stop') sala.estado_reproduccion = 'IDLE';
-    if (comando === 'pause') sala.estado_reproduccion = 'PAUSED';
-    
-    // Si se detiene, reiniciamos minutaje para simular
+    if (sala.volumen === undefined) sala.volumen = 7.0;
+    if (!sala.estado_luces) sala.estado_luces = sala.estado_reproduccion === 'PLAYING' ? 'CINE' : 'SALA';
+
+    if (comando === 'play') {
+      sala.estado_reproduccion = 'PLAYING';
+      sala.estado_luces = 'CINE';
+      sala.lampara_encendida = true;
+    }
     if (comando === 'stop') {
+      sala.estado_reproduccion = 'IDLE';
+      sala.estado_luces = 'SALA';
       sala.minutaje_actual_min = 0;
       sala.tiempo_restante_min = sala.duracion_total_min || 0;
     }
+    if (comando === 'pause') {
+      sala.estado_reproduccion = 'PAUSED';
+    }
+    if (comando === 'volumen_subir') {
+      sala.volumen = Math.min(10.0, Math.round(((sala.volumen || 7.0) + 0.5) * 10) / 10);
+    }
+    if (comando === 'volumen_bajar') {
+      sala.volumen = Math.max(0.0, Math.round(((sala.volumen || 7.0) - 0.5) * 10) / 10);
+    }
+    if (comando === 'volumen_set' && typeof valorExtra === 'number') {
+      sala.volumen = Math.min(10.0, Math.max(0.0, Math.round(valorExtra * 10) / 10));
+    }
+    if (comando === 'luces_toggle') {
+      sala.estado_luces = sala.estado_luces === 'CINE' ? 'SALA' : sala.estado_luces === 'SALA' ? 'LIMPIEZA' : 'CINE';
+    }
+    if (comando === 'luces_cine') sala.estado_luces = 'CINE';
+    if (comando === 'luces_sala') sala.estado_luces = 'SALA';
+    if (comando === 'luces_limpieza') sala.estado_luces = 'LIMPIEZA';
+    if (comando === 'lampara_toggle') {
+      sala.lampara_encendida = !sala.lampara_encendida;
+    }
     
     this.persist();
+
+    // Enviar por red al backend de Python para emitir el SOAP al servidor de cine real
+    if (['play', 'pause', 'stop'].includes(comando)) {
+      fetch(`/api/salas/${salaId}/comando`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comando }),
+      }).catch(() => {});
+    }
+
     return true;
   }
 

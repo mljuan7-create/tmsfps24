@@ -20,6 +20,8 @@ export interface Sala {
   puerto_sonido: number; // 80 o 61408
   estado_reproduccion: EstadoReproduccion;
   lampara_encendida: boolean; // Estado de la lámpara (ON / OFF)
+  volumen?: number; // Nivel de audio Dolby (ej. 7.0)
+  estado_luces?: 'CINE' | 'SALA' | 'LIMPIEZA'; // Estado iluminación
   duracion_total_min: number; // Duración total de la SPL / CPL
   minutaje_actual_min: number; // Minutaje actual transcurrido
   almacenamiento_total_gb: number;

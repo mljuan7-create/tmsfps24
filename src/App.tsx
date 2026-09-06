@@ -29,10 +29,10 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  // Pestaña activa
+  // Pestaña activa (por defecto: 'supervision' para mostrar las salas inmediatamente)
   const [pestañaActiva, setPestañaActiva] = useState<
     'todas' | 'supervision' | 'contenidos' | 'kdms' | 'cola'
-  >('todas');
+  >('supervision');
 
   // Estado principal
   const [salas, setSalas] = useState<Sala[]>([]);
@@ -64,9 +64,23 @@ export default function App() {
     mensaje: string;
   } | null>(null);
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales y sincronizar con los servidores reales
   useEffect(() => {
     actualizarDatos();
+
+    // Sincronizar inmediatamente con el backend
+    tmsApi.sincronizarConServidorReal().then((salasActualizadas) => {
+      setSalas(salasActualizadas);
+    });
+
+    // Polling cada 4 segundos para actualizar estado en vivo de las cabinas
+    const interval = setInterval(() => {
+      tmsApi.sincronizarConServidorReal().then((salasActualizadas) => {
+        setSalas(salasActualizadas);
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const actualizarDatos = () => {
@@ -111,11 +125,24 @@ export default function App() {
     setSalasSeleccionadas([]);
   };
 
-  // Alternar estado de la sala (PLAYING <-> IDLE)
-  const enviarComandoSala = (id: number, comando: 'play' | 'pause' | 'stop') => {
-    tmsApi.enviarComando(id, comando);
+  // Enviar comando a la sala (Play, Pausa, Stop, Volumen, Luces, Lámpara)
+  const enviarComandoSala = (id: number, comando: string, valorExtra?: number | string) => {
+    tmsApi.enviarComando(id, comando, valorExtra);
     actualizarDatos();
-    mostrarToast(`Comando '${comando.toUpperCase()}' enviado a la sala ${id}`, 'info');
+    const nombreSala = salas.find((s) => s.id === id)?.nombre || `Sala ${id}`;
+    if (comando === 'play') mostrarToast(`${nombreSala}: Proyección iniciada ▶`, 'success');
+    else if (comando === 'pause') mostrarToast(`${nombreSala}: Pausa ⏸`, 'info');
+    else if (comando === 'stop') mostrarToast(`${nombreSala}: Proyección detenida ⏹`, 'info');
+    else if (comando === 'volumen_subir' || comando === 'volumen_bajar' || comando === 'volumen_set') {
+      const v = tmsApi.getSalas().find((s) => s.id === id)?.volumen ?? 7.0;
+      mostrarToast(`${nombreSala}: Fader de Audio a ${v.toFixed(1)} dB 🔊`, 'info');
+    } else if (comando.startsWith('luces')) {
+      const l = tmsApi.getSalas().find((s) => s.id === id)?.estado_luces;
+      mostrarToast(`${nombreSala}: Iluminación cambiada a ${l} 💡`, 'info');
+    } else if (comando === 'lampara_toggle') {
+      const lamp = tmsApi.getSalas().find((s) => s.id === id)?.lampara_encendida;
+      mostrarToast(`${nombreSala}: Lámpara ${lamp ? 'ENCENDIDA ⚡' : 'APAGADA'}`, 'info');
+    }
   };
 
   const toggleEstadoSala = (id: number) => {
