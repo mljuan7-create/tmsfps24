@@ -273,17 +273,17 @@ def init_database(force_reinit: bool = False):
         )
         """)
 
-        # Salas 2 a 10: Servidores DOLBY DSS220 (puerto 61408), Proyectores NEC, Dolby CP750
+        # Salas 2 a 10: Servidores DOLBY DSS220 (puerto 8080), Proyectores NEC, Dolby CP750
         salas_data = [
-            (2, 'Sala 2', '10.100.47.21', 'DOLBY DSS220', 61408, 'DSS220-210402', '10.100.47.23', 'NEC NC 3200S', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 850.0, None, 0, '192.168.168.21', '192.168.168.23', 0, 0, 0),
-            (3, 'Sala 3', '10.100.47.31', 'DOLBY DSS220', 61408, 'DSS220-210403', '10.100.47.33', 'NEC NC 3200S', 7000, 'DOLBY CP750', 61408, 'PLAYING', 2000.0, 310.2, 'AFuego_FTR_F-185_ES_51', 72, '192.168.168.31', '192.168.168.33', 1, 138, 66),
-            (4, 'Sala 4', '10.100.47.41', 'DOLBY DSS220', 61408, 'DSS220-210404', '10.100.47.43', 'NEC NC 3200S', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 1120.0, None, 0, '192.168.168.41', '192.168.168.43', 0, 0, 0),
-            (5, 'Sala 5', '10.100.47.51', 'DOLBY DSS220', 61408, 'DSS220-210405', '10.100.47.53', 'NEC NC 1200C', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 940.8, None, 0, '192.168.168.51', '192.168.168.53', 0, 0, 0),
-            (6, 'Sala 6', '10.100.47.61', 'DOLBY DSS220', 61408, 'DSS220-210406', '10.100.47.63', 'NEC NC 2000C', 7000, 'DOLBY CP750', 61408, 'PLAYING', 2000.0, 480.0, 'GLADIATOR_II_FTR_S', 15, '192.168.168.61', '192.168.168.63', 1, 148, 133),
-            (7, 'Sala 7', '10.100.47.71', 'DOLBY DSS220', 61408, 'DSS220-210407', '10.100.47.73', 'NEC NC 1200C', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 1310.0, None, 0, '192.168.168.71', '192.168.168.73', 0, 0, 0),
-            (8, 'Sala 8', '10.100.47.81', 'DOLBY DSS220', 61408, 'DSS220-210408', '10.100.47.83', 'NEC NC 2000C', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 620.5, None, 0, '192.168.168.81', '192.168.168.83', 0, 0, 0),
-            (9, 'Sala 9', '10.100.47.91', 'DOLBY DSS220', 61408, 'DSS220-210409', '10.100.47.93', 'NEC NC 1200C', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 980.2, None, 0, '192.168.168.91', '192.168.168.93', 0, 0, 0),
-            (10, 'Sala 10', '10.100.47.101', 'DOLBY DSS220', 61408, 'DSS220-210410', '10.100.47.103', 'NEC NC 2000C', 7000, 'DOLBY CP750', 61408, 'PLAYING', 2000.0, 240.0, 'DUNE_PART2_FTR_S', 95, '192.168.168.101', '192.168.168.103', 1, 166, 71),
+            (2, 'Sala 2', '10.100.47.21', 'DOLBY DSS220', 8080, 'DSS220-210402', '10.100.47.23', 'NEC NC 3200S', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 850.0, None, 0, '192.168.168.21', '192.168.168.23', 0, 0, 0),
+            (3, 'Sala 3', '10.100.47.31', 'DOLBY DSS220', 8080, 'DSS220-210403', '10.100.47.33', 'NEC NC 3200S', 7000, 'DOLBY CP750', 61408, 'PLAYING', 2000.0, 310.2, 'AFuego_FTR_F-185_ES_51', 72, '192.168.168.31', '192.168.168.33', 1, 138, 66),
+            (4, 'Sala 4', '10.100.47.41', 'DOLBY DSS220', 8080, 'DSS220-210404', '10.100.47.43', 'NEC NC 3200S', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 1120.0, None, 0, '192.168.168.41', '192.168.168.43', 0, 0, 0),
+            (5, 'Sala 5', '10.100.47.51', 'DOLBY DSS220', 8080, 'DSS220-210405', '10.100.47.53', 'NEC NC 1200C', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 940.8, None, 0, '192.168.168.51', '192.168.168.53', 0, 0, 0),
+            (6, 'Sala 6', '10.100.47.61', 'DOLBY DSS220', 8080, 'DSS220-210406', '10.100.47.63', 'NEC NC 2000C', 7000, 'DOLBY CP750', 61408, 'PLAYING', 2000.0, 480.0, 'GLADIATOR_II_FTR_S', 15, '192.168.168.61', '192.168.168.63', 1, 148, 133),
+            (7, 'Sala 7', '10.100.47.71', 'DOLBY DSS220', 8080, 'DSS220-210407', '10.100.47.73', 'NEC NC 1200C', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 1310.0, None, 0, '192.168.168.71', '192.168.168.73', 0, 0, 0),
+            (8, 'Sala 8', '10.100.47.81', 'DOLBY DSS220', 8080, 'DSS220-210408', '10.100.47.83', 'NEC NC 2000C', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 620.5, None, 0, '192.168.168.81', '192.168.168.83', 0, 0, 0),
+            (9, 'Sala 9', '10.100.47.91', 'DOLBY DSS220', 8080, 'DSS220-210409', '10.100.47.93', 'NEC NC 1200C', 7000, 'DOLBY CP750', 61408, 'IDLE', 2000.0, 980.2, None, 0, '192.168.168.91', '192.168.168.93', 0, 0, 0),
+            (10, 'Sala 10', '10.100.47.101', 'DOLBY DSS220', 8080, 'DSS220-210410', '10.100.47.103', 'NEC NC 2000C', 7000, 'DOLBY CP750', 61408, 'PLAYING', 2000.0, 240.0, 'DUNE_PART2_FTR_S', 95, '192.168.168.101', '192.168.168.103', 1, 166, 71),
         ]
         cur.executemany("""
         INSERT INTO salas (
@@ -323,6 +323,9 @@ def init_database(force_reinit: bool = False):
                 minutaje_actual_min = ?
             WHERE id = ?
             """, (s_serial, ip_p, mod_p, p_p, ip_is, ip_ip, lamp, dur, minut, s_id))
+        
+        # FIX: Ensure all Dolby servers are correctly updated to port 8080 even if already seeded with 61408
+        cur.execute("UPDATE salas SET puerto_servidor = 8080 WHERE tipo_servidor = 'DOLBY DSS220'")
         conn.commit()
 
     # --- SEED DE LIBRERÍAS FTP ---
@@ -629,6 +632,93 @@ def simular_ciclo_dolby_xsd(ingesta_id: int):
     conn.commit()
     conn.close()
 
+# =====================================================================
+# LÓGICA DE API SOAP DOLBY DSS220 (FASE 3 Y FASE 2)
+# =====================================================================
+import urllib.request
+import urllib.error
+
+def dolby_get_playback_state(ip: str) -> dict:
+    url = f"http://{ip}:8080/dcinema/ws/smi/v1/PlaybackControlService"
+    soap_body = """<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:v1_0="http://www.dolby.com/dcinema/ws/smi/v1_0">
+    <soapenv:Header/>
+    <soapenv:Body><v1_0:getPlaybackStateRequest/></soapenv:Body>
+</soapenv:Envelope>"""
+
+    headers = {
+        "Content-Type": "text/xml; charset=utf-8",
+        "SOAPAction": '"http://www.dolby.com/dcinema/ws/smi/v1/getPlaybackState"'
+    }
+
+    req = urllib.request.Request(url, data=soap_body.encode('utf-8'), headers=headers, method='POST')
+    try:
+        with urllib.request.urlopen(req, timeout=5) as response:
+            xml_resp = response.read().decode('utf-8')
+            root = ET.fromstring(xml_resp)
+            state_node = root.find('.//{http://www.dolby.com/dcinema/ws/smi/v1/schemas/common}transportStateType')
+            state = state_node.text if state_node is not None else "UNKNOWN"
+            return {"status": "success", "state": state, "raw": xml_resp}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+def dolby_send_command(ip: str, command: str) -> bool:
+    """ Comandos válidos: play, pause, stop, next, previous """
+    url = f"http://{ip}:8080/dcinema/ws/smi/v1/PlaybackControlService"
+    soap_body = f"""<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:v1_0="http://www.dolby.com/dcinema/ws/smi/v1_0">
+    <soapenv:Header/>
+    <soapenv:Body><v1_0:{command}Request/></soapenv:Body>
+</soapenv:Envelope>"""
+
+    headers = {
+        "Content-Type": "text/xml; charset=utf-8",
+        "SOAPAction": f'"http://www.dolby.com/dcinema/ws/smi/v1/{command}"'
+    }
+
+    req = urllib.request.Request(url, data=soap_body.encode('utf-8'), headers=headers, method='POST')
+    try:
+        with urllib.request.urlopen(req, timeout=5) as response:
+            return response.getcode() == 200
+    except Exception as e:
+        print(f"Error enviando {command} al Dolby {ip}: {e}")
+        return False
+
+def dolby_transfer_content(ip: str, ftp_url: str, username: str = "anonymous", password: str = "anonymous") -> str:
+    """ Inicia una ingesta en el Dolby y devuelve el transferId """
+    url = f"http://{ip}:8080/dcinema/ws/smi/v1/TransferManagementService"
+    soap_body = f"""<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:v1_0="http://www.dolby.com/dcinema/ws/smi/v1_0" xmlns:com="http://www.dolby.com/dcinema/ws/smi/v1/schemas/common">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <v1_0:transferContentRequest>
+            <v1_0:transferType>PULL</v1_0:transferType>
+            <v1_0:transferProtocolType>FTP</v1_0:transferProtocolType>
+            <v1_0:contentType>CLIP</v1_0:contentType>
+            <v1_0:destinationContentStore>MAINSTORE</v1_0:destinationContentStore>
+            <v1_0:url>{ftp_url}</v1_0:url>
+            <v1_0:userName>{username}</v1_0:userName>
+            <v1_0:password>{password}</v1_0:password>
+        </v1_0:transferContentRequest>
+    </soapenv:Body>
+</soapenv:Envelope>"""
+
+    headers = {
+        "Content-Type": "text/xml; charset=utf-8",
+        "SOAPAction": '"http://www.dolby.com/dcinema/ws/smi/v1/transferContent"'
+    }
+
+    req = urllib.request.Request(url, data=soap_body.encode('utf-8'), headers=headers, method='POST')
+    try:
+        with urllib.request.urlopen(req, timeout=5) as response:
+            xml_resp = response.read().decode('utf-8')
+            root = ET.fromstring(xml_resp)
+            tid_node = root.find('.//{http://www.dolby.com/dcinema/ws/smi/v1/schemas/common}transferId')
+            return tid_node.text if tid_node is not None else None
+    except Exception as e:
+        print(f"Error iniciando ingesta en {ip}: {e}")
+        return None
+
 def programar_ingestas_core(
     salas_ids: List[int],
     contenidos_ids: List[int],
@@ -768,29 +858,67 @@ def programar_ingestas_core(
                 nuevo_libre = max(0.0, sala["almacenamiento_libre_gb"] - tamano_gb)
                 cur.execute("UPDATE salas SET almacenamiento_libre_gb = ? WHERE id = ?", (nuevo_libre, s_id))
 
-                cur.execute("""
-                INSERT INTO cola_ingestas (
-                    sala_id, contenido_id, estado, dolby_xsd_state, modo_horario,
-                    programado_para, creado_en, progreso, velocidad_mbs, advertencia, mensaje
-                ) VALUES (?, ?, 'PENDING', 'PENDING', 'ahora', 'Inmediata', ?, 0.0, 0.0, NULL, ?)
-                """, (
-                    s_id, c_id, creado_en,
-                    f"Iniciando handshake FTP DCI con {nombre_sala} ({sala['ip_servidor']})..."
-                ))
-                ingesta_id = cur.lastrowid
-                tareas_para_simular.append(ingesta_id)
+                if not MODO_SIMULACION and sala["tipo_servidor"] == "DOLBY DSS220":
+                    import re
+                    ip_match = re.search(r'\((\d+\.\d+\.\d+\.\d+)\)', contenido['fuente_ftp'])
+                    ftp_ip = ip_match.group(1) if ip_match else "192.168.168.4"
+                    ftp_user, ftp_pass = "anonymous", "anonymous"
+                    for lib in LIBRERIAS_FTP_CONFIG.values():
+                        if lib["ip"] == ftp_ip:
+                            ftp_user = lib["usuario"]
+                            ftp_pass = lib["clave"]
+                            break
+                    
+                    ruta_base = contenido.get('ruta_ymagis') or '/dcp'
+                    ftp_url = f"ftp://{ftp_ip}{ruta_base}/{contenido['titulo']}/"
+                    
+                    tid = dolby_transfer_content(sala["ip_servidor"], ftp_url, ftp_user, ftp_pass)
+                    mensaje = f"Ingesta SOAP iniciada. TransferID: {tid}" if tid else f"Fallo al iniciar ingesta SOAP en {sala['ip_servidor']}"
+                    
+                    cur.execute("""
+                    INSERT INTO cola_ingestas (
+                        sala_id, contenido_id, estado, dolby_xsd_state, modo_horario,
+                        programado_para, creado_en, progreso, velocidad_mbs, advertencia, mensaje
+                    ) VALUES (?, ?, 'IN_PROGRESS', 'IN_PROGRESS', 'ahora', 'Inmediata', ?, 5.0, 0.0, NULL, ?)
+                    """, (s_id, c_id, creado_en, mensaje))
+                    ingesta_id = cur.lastrowid
+                    
+                    ingestas_registradas.append({
+                        "id": ingesta_id,
+                        "sala_id": s_id,
+                        "sala_nombre": nombre_sala,
+                        "contenido_id": c_id,
+                        "contenido_titulo": titulo_contenido,
+                        "estado": "IN_PROGRESS",
+                        "dolby_xsd_state": "IN_PROGRESS",
+                        "modo": "ahora",
+                        "progreso": 5.0,
+                        "transfer_id": tid
+                    })
+                else:
+                    cur.execute("""
+                    INSERT INTO cola_ingestas (
+                        sala_id, contenido_id, estado, dolby_xsd_state, modo_horario,
+                        programado_para, creado_en, progreso, velocidad_mbs, advertencia, mensaje
+                    ) VALUES (?, ?, 'PENDING', 'PENDING', 'ahora', 'Inmediata', ?, 0.0, 0.0, NULL, ?)
+                    """, (
+                        s_id, c_id, creado_en,
+                        f"Iniciando handshake FTP DCI con {nombre_sala} ({sala['ip_servidor']})..."
+                    ))
+                    ingesta_id = cur.lastrowid
+                    tareas_para_simular.append(ingesta_id)
 
-                ingestas_registradas.append({
-                    "id": ingesta_id,
-                    "sala_id": s_id,
-                    "sala_nombre": nombre_sala,
-                    "contenido_id": c_id,
-                    "contenido_titulo": titulo_contenido,
-                    "estado": "PENDING",
-                    "dolby_xsd_state": "PENDING",
-                    "modo": "ahora",
-                    "progreso": 0.0
-                })
+                    ingestas_registradas.append({
+                        "id": ingesta_id,
+                        "sala_id": s_id,
+                        "sala_nombre": nombre_sala,
+                        "contenido_id": c_id,
+                        "contenido_titulo": titulo_contenido,
+                        "estado": "PENDING",
+                        "dolby_xsd_state": "PENDING",
+                        "modo": "ahora",
+                        "progreso": 0.0
+                    })
 
     conn.commit()
     conn.close()
@@ -1164,6 +1292,28 @@ if FASTAPI_AVAILABLE:
         cur = conn.cursor()
         cur.execute("SELECT * FROM salas ORDER BY id ASC")
         rows = [dict(r) for r in cur.fetchall()]
+        
+        if not MODO_SIMULACION:
+            # Encuesta real a los servidores Dolby
+            actualizados = False
+            for row in rows:
+                if row["tipo_servidor"] == "DOLBY DSS220":
+                    res = dolby_get_playback_state(row["ip_servidor"])
+                    if res.get("status") == "success":
+                        estado_raw = res.get("state", "UNKNOWN")
+                        # Mapear estados del Dolby a los de nuestra app (PLAYING, IDLE, PAUSED, STOPPED)
+                        estado_mapped = estado_raw
+                        if estado_raw in ("READY", "STOPPED", "UNKNOWN"):
+                            estado_mapped = "IDLE"
+                        
+                        if estado_mapped != row["estado_reproduccion"] and estado_mapped in ("PLAYING", "IDLE", "PAUSED", "STOPPED"):
+                            cur.execute("UPDATE salas SET estado_reproduccion = ? WHERE id = ?", (estado_mapped, row["id"]))
+                            row["estado_reproduccion"] = estado_mapped
+                            actualizados = True
+            
+            if actualizados:
+                conn.commit()
+                
         conn.close()
         return rows
 
@@ -1185,6 +1335,32 @@ if FASTAPI_AVAILABLE:
         conn.commit()
         conn.close()
         return {"sala_id": sala_id, "nuevo_estado": nuevo, "tiempo_restante_min": nuevo_restante}
+
+
+    # 7B. POST /api/salas/{sala_id}/comando (Enviar comandos SOAP a Dolby)
+    @app.post("/api/salas/{sala_id}/comando")
+    def enviar_comando_sala(sala_id: int, req: Dict[str, Any] = Body(...)):
+        comando = req.get("comando")
+        if comando not in ("play", "pause", "stop", "next", "previous"):
+            raise HTTPException(status_code=400, detail="Comando inválido")
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM salas WHERE id = ?", (sala_id,))
+        sala = cur.fetchone()
+        conn.close()
+
+        if not sala:
+            raise HTTPException(status_code=404, detail="Sala no encontrada")
+
+        if not MODO_SIMULACION and sala["tipo_servidor"] == "DOLBY DSS220":
+            exito = dolby_send_command(sala["ip_servidor"], comando)
+            return {"sala_id": sala_id, "comando": comando, "exito": exito, "modo": "PRODUCCION"}
+        else:
+            # Simulación: simplemente forzamos el toggle_estado si es play/stop
+            if comando == "play":
+                toggle_estado_sala(sala_id) # Para simular
+            return {"sala_id": sala_id, "comando": comando, "exito": True, "modo": "SIMULACION"}
 
     # 8. GET /api/cola-ingestas (Estado oficial XSD de Dolby)
     @app.get("/api/cola-ingestas")

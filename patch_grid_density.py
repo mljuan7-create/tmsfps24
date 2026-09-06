@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import os
+
+content = """import React, { useState } from 'react';
 import { Film, Play, Pause, Square, CheckSquare, Sun, Clock, Maximize2 } from 'lucide-react';
-import { Sala } from '../types';
+import { SalaCabina } from '../types';
 import { SalaControlModal } from './SalaControlModal';
 
 interface SalasGridProps {
-  salas: Sala[];
+  salas: SalaCabina[];
   salasSeleccionadas: number[];
   onToggleSeleccionSala: (id: number) => void;
   onSelectTodasSalas: () => void;
@@ -226,3 +228,6 @@ export const SalasGrid: React.FC<SalasGridProps> = ({
 const VideoIcon = () => (
   <svg xmlns="http://www.w3.org/.svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
 );
+"""
+with open("src/components/SalasGrid.tsx", "w") as f:
+    f.write(content)

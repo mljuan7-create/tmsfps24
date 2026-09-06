@@ -322,6 +322,25 @@ export class TMSService {
     return false;
   }
 
+  
+  public enviarComando(salaId: number, comando: string): boolean {
+    const sala = this.salas.find((s) => s.id === salaId);
+    if (!sala) return false;
+    
+    if (comando === 'play') sala.estado_reproduccion = 'PLAYING';
+    if (comando === 'stop') sala.estado_reproduccion = 'IDLE';
+    if (comando === 'pause') sala.estado_reproduccion = 'PAUSED';
+    
+    // Si se detiene, reiniciamos minutaje para simular
+    if (comando === 'stop') {
+      sala.minutaje_actual_min = 0;
+      sala.tiempo_restante_min = sala.duracion_total_min || 0;
+    }
+    
+    this.persist();
+    return true;
+  }
+
   public getKdms(): KdmInventario[] {
     return [...this.kdms];
   }

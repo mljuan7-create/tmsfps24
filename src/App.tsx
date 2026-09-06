@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Header } from './components/Header';
 import { SalasGrid } from './components/SalasGrid';
 import { ContenidosAccordion } from './components/ContenidosAccordion';
 import { ModalIngesta } from './components/ModalIngesta';
@@ -113,6 +112,12 @@ export default function App() {
   };
 
   // Alternar estado de la sala (PLAYING <-> IDLE)
+  const enviarComandoSala = (id: number, comando: 'play' | 'pause' | 'stop') => {
+    tmsApi.enviarComando(id, comando);
+    actualizarDatos();
+    mostrarToast(`Comando '${comando.toUpperCase()}' enviado a la sala ${id}`, 'info');
+  };
+
   const toggleEstadoSala = (id: number) => {
     const salaActualizada = tmsApi.toggleEstadoSala(id);
     actualizarDatos();
@@ -217,16 +222,64 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-red-900 selection:text-white pb-20">
-      {/* Header Principal */}
-      <Header
-        totalSeleccionados={contenidosSeleccionados.length}
-        onOpenModalIngesta={() => setModalIngestaAbierto(true)}
-        onOpenColaIngesta={() => setDrawerColaAbierto(true)}
-        onOpenDocModal={() => setModalDocAbierto(true)}
-        onOpenKdmModal={() => setModalKdmAbierto(true)}
-        onReset={resetearDemo}
-        colaPendientesCount={tareasPendientesCount}
-      />
+      {/* Header Minimalista Integrado */}
+      <div className="bg-[#111318] border-b border-zinc-800/80 sticky top-0 z-30">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14">
+            
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-sky-500/10 rounded flex items-center justify-center border border-sky-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-400"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+              </div>
+              <h1 className="text-[15px] font-semibold tracking-wide text-zinc-100 flex items-center gap-1.5">
+                TMS <span className="text-zinc-600 font-light">| PARQUE ASTUR</span>
+              </h1>
+            </div>
+
+            {/* PESTAÑAS CENTRALES (Minimalistas) */}
+            <div className="flex h-full items-end gap-1">
+              <button
+                onClick={() => setPestañaActiva('supervision')}
+                className={`px-6 h-full flex items-center gap-2 text-sm transition-colors border-b-2 font-medium ${
+                  pestañaActiva === 'supervision'
+                    ? 'border-sky-500 text-sky-400 bg-sky-500/5'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Supervisión
+              </button>
+              <button
+                onClick={() => setPestañaActiva('contenidos')}
+                className={`px-6 h-full flex items-center gap-2 text-sm transition-colors border-b-2 font-medium ${
+                  pestañaActiva === 'contenidos'
+                    ? 'border-sky-500 text-sky-400 bg-sky-500/5'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Contenidos
+              </button>
+            </div>
+
+            {/* Acciones Derecha */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setDrawerColaAbierto(true)}
+                className={`px-3 py-1.5 flex items-center gap-2 text-xs font-medium rounded transition-colors ${cola.length > 0 ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                Transferencias {cola.length > 0 && `(${cola.length})`}
+              </button>
+              
+              <button
+                onClick={() => setModalKdmAbierto(true)}
+                className="px-3 py-1.5 text-xs font-medium rounded text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                Llaves KDM
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
 
       {/* Banner de Alerta Roja: Regla de Protección Crítica */}
       {alertaRojaMensaje && (
@@ -238,104 +291,9 @@ export default function App() {
         />
       )}
 
-      {/* Barra de Acceso Rápido / Guía del Operador de Cabina */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-1">
-        <div className="p-3 rounded-xl bg-zinc-900/90 border border-zinc-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-zinc-300">
-            <span className="w-2 h-2 rounded-full bg-red-500"></span>
-            <span className="font-semibold text-zinc-200">Test Rápido de Cabina:</span>
-            <span className="text-zinc-400">
-              Pruebe la Regla de Protección Crítica (Sala en PLAYING + Ingesta &apos;Ahora&apos;) con 1 clic:
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              id="btn-test-regla-rapido"
-              onClick={probarReglaProteccionCritica}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950 hover:bg-red-900 text-red-300 border border-red-700 font-mono font-bold transition cursor-pointer"
-            >
-              <AlertOctagon className="w-3.5 h-3.5 text-red-400" />
-              <span>Simular Ingesta en PLAYING (Disparar Alerta Roja)</span>
-            </button>
-            <button
-              id="btn-kdm-rapido-bar"
-              onClick={() => setModalKdmAbierto(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-700 font-mono font-bold transition cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>KDMs Sala 5 (Fase 3)</span>
-            </button>
-            <button
-              onClick={() => setModalDocAbierto(true)}
-              className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
-              title="Información de arquitectura Parque Astur"
-            >
-              <HelpCircle className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Pestañas de Navegación del Sistema (Documento Maestro: Fase 1, 2 y 3) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-zinc-800">
-          <button
-            onClick={() => setPestañaActiva('todas')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-t-lg font-mono text-xs font-semibold transition cursor-pointer border-t border-x ${
-              pestañaActiva === 'todas'
-                ? 'bg-zinc-900 text-white border-zinc-700 border-b-2 border-b-red-500'
-                : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-900/50'
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Vista Conjunta (Dashboard Completo)</span>
-          </button>
-
-          <button
-            onClick={() => setPestañaActiva('supervision')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-t-lg font-mono text-xs font-semibold transition cursor-pointer border-t border-x ${
-              pestañaActiva === 'supervision'
-                ? 'bg-zinc-900 text-white border-zinc-700 border-b-2 border-b-red-500'
-                : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-900/50'
-            }`}
-          >
-            <MonitorPlay className="w-3.5 h-3.5 text-sky-400" />
-            <span>📺 Pestaña 1: Supervisión (10 Cabinas)</span>
-          </button>
-
-          <button
-            onClick={() => setPestañaActiva('contenidos')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-t-lg font-mono text-xs font-semibold transition cursor-pointer border-t border-x ${
-              pestañaActiva === 'contenidos'
-                ? 'bg-zinc-900 text-white border-zinc-700 border-b-2 border-b-red-500'
-                : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-900/50'
-            }`}
-          >
-            <Film className="w-3.5 h-3.5 text-emerald-400" />
-            <span>📦 Pestaña 2: Contenidos (LMS Ymagis)</span>
-          </button>
-
-          <button
-            onClick={() => setModalKdmAbierto(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-t-lg font-mono text-xs font-semibold text-zinc-400 hover:text-amber-300 transition cursor-pointer hover:bg-zinc-900/50"
-          >
-            <Key className="w-3.5 h-3.5 text-amber-400" />
-            <span>🔑 Pestaña 3: Llaves KDMs (Dolby SMI)</span>
-          </button>
-
-          <button
-            onClick={() => setDrawerColaAbierto(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-t-lg font-mono text-xs font-semibold text-zinc-400 hover:text-red-300 transition cursor-pointer hover:bg-zinc-900/50"
-          >
-            <ListOrdered className="w-3.5 h-3.5 text-red-400" />
-            <span>📥 Cola de Ingestas & Protección ({cola.length})</span>
-          </button>
-        </div>
-      </div>
-
-      {/* SECCIÓN SUPERIOR: Grid de 10 Salas con almacenamiento libre y estado de reproducción */}
-      {(pestañaActiva === 'todas' || pestañaActiva === 'supervision') && (
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 pt-6">
+        {/* SECCIÓN SUPERIOR: Grid de 10 Salas con almacenamiento libre y estado de reproducción */}
+      {pestañaActiva === 'supervision' && (
         <SalasGrid
           salas={salas}
           salasSeleccionadas={salasSeleccionadas}
@@ -343,11 +301,12 @@ export default function App() {
           onSelectTodasSalas={selectTodasSalas}
           onDeselectTodasSalas={deselectTodasSalas}
           onToggleEstadoSala={toggleEstadoSala}
+          onEnviarComandoSala={enviarComandoSala}
         />
       )}
 
       {/* SECCIÓN INFERIOR: Gestor de Contenidos con carpetas colapsables (FTR y TLR) */}
-      {(pestañaActiva === 'todas' || pestañaActiva === 'contenidos') && (
+      {pestañaActiva === 'contenidos' && (
         <ContenidosAccordion
           contenidos={contenidos}
           contenidosSeleccionados={contenidosSeleccionados}
@@ -359,26 +318,30 @@ export default function App() {
         />
       )}
 
-      {/* BOTÓN FLOTANTE INFERIOR '📥 Ingesta' */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <button
-          id="btn-ingesta-flotante-sticky"
-          onClick={() => setModalIngestaAbierto(true)}
-          className={`flex items-center gap-3 px-5 py-3 rounded-full font-bold text-sm shadow-2xl transition-all duration-300 cursor-pointer ${
-            contenidosSeleccionados.length > 0
-              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950 ring-4 ring-emerald-500/30 scale-105'
-              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 shadow-black'
-          }`}
-        >
-          <HardDriveDownload className="w-5 h-5" />
-          <span>📥 Ingesta</span>
-          {contenidosSeleccionados.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-mono text-xs">
-              {contenidosSeleccionados.length} CPL
-            </span>
-          )}
-        </button>
       </div>
+
+      {/* BOTÓN FLOTANTE INFERIOR '📥 Ingesta' */}
+      {pestañaActiva === 'contenidos' && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <button
+            id="btn-ingesta-flotante-sticky"
+            onClick={() => setModalIngestaAbierto(true)}
+            className={`flex items-center gap-3 px-5 py-3 rounded-full font-bold text-sm shadow-2xl transition-all duration-300 cursor-pointer ${
+              contenidosSeleccionados.length > 0
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950 ring-4 ring-emerald-500/30 scale-105'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 shadow-black'
+            }`}
+          >
+            <HardDriveDownload className="w-5 h-5" />
+            <span>📥 Ingesta</span>
+            {contenidosSeleccionados.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-mono text-xs">
+                {contenidosSeleccionados.length} CPL
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* MODAL FLOTANTE DE INGESTA */}
       <ModalIngesta
