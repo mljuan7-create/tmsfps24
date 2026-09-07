@@ -1435,21 +1435,24 @@ if FASTAPI_AVAILABLE:
                 return {"success": True}
 
 
+
     import os
     from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
 
-    # Serve the static assets
     if os.path.exists("dist"):
         app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
         
+        @app.get("/")
         @app.get("/{full_path:path}")
-        def serve_react_app(full_path: str):
-            if os.path.exists(f"dist/{full_path}") and os.path.isfile(f"dist/{full_path}"):
+        def serve_react_app(full_path: str = ""):
+            if full_path and os.path.exists(f"dist/{full_path}") and os.path.isfile(f"dist/{full_path}"):
                 return FileResponse(f"dist/{full_path}")
             return FileResponse("dist/index.html")
     else:
+        @app.get("/")
         @app.get("/{full_path:path}")
-        def no_dist(full_path: str):
+        def no_dist(full_path: str = ""):
             return {"error": "The dist folder does not exist. Run 'npm run build' first."}
 
 if __name__ == "__main__":
