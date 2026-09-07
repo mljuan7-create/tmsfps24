@@ -1,307 +1,127 @@
 import React, { useState } from 'react';
-import {
-  Film,
-  Play,
-  Pause,
-  Square,
-  Volume2,
-  VolumeX,
-  Lightbulb,
-  Zap,
-  Settings2,
-  CheckSquare,
-  Square as SquareIcon,
-} from 'lucide-react';
 import { Sala } from '../types';
-import { SalaControlModal } from './SalaControlModal';
+import { Clock, User, Volume2 } from 'lucide-react';
+import { SalaDetail } from './SalaDetail';
 
 interface SalasGridProps {
   salas: Sala[];
-  salasSeleccionadas: number[];
-  onToggleSeleccionSala: (id: number) => void;
-  onSelectTodasSalas: () => void;
-  onDeselectTodasSalas: () => void;
-  onToggleEstadoSala: (id: number) => void;
-  onEnviarComandoSala?: (id: number, comando: string, valorExtra?: number | string) => void;
+  onEnviarComandoSala: (id: number, comando: string, valor?: any) => void;
 }
 
-const formatTime = (minutes: number) => {
-  if (!minutes || isNaN(minutes)) return '00:00:00';
-  const isNegative = minutes < 0;
-  const absMins = Math.abs(minutes);
-  const h = Math.floor(absMins / 60);
-  const m = Math.floor(absMins % 60);
-  const s = Math.floor((absMins * 60) % 60);
-  return `${isNegative ? '-' : ''}${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-};
+export function SalasGrid({ salas, onEnviarComandoSala }: SalasGridProps) {
+  const [salaSeleccionada, setSalaSeleccionada] = useState<number | null>(null);
 
-const limpiarTitulo = (titulo: string | null) => {
-  if (!titulo) return 'Sin sesión cargada';
-  return titulo
-    .replace(/_/g, ' ')
-    .replace(/FTR.*/i, '')
-    .replace(/TLR.*/i, '')
-    .trim() || titulo.replace(/_/g, ' ');
-};
-
-export const SalasGrid: React.FC<SalasGridProps> = ({
-  salas,
-  salasSeleccionadas,
-  onToggleSeleccionSala,
-  onSelectTodasSalas,
-  onDeselectTodasSalas,
-  onEnviarComandoSala,
-}) => {
-  const [modalSalaId, setModalSalaId] = useState<number | null>(null);
-  const todasSeleccionadas = salas.length > 0 && salasSeleccionadas.length === salas.length;
-
-  const salasEnPlay = salas.filter((s) => s.estado_reproduccion === 'PLAYING').length;
+  if (salaSeleccionada !== null) {
+    const salaActual = salas.find(s => s.id === salaSeleccionada);
+    if (!salaActual) return null;
+    return (
+      <SalaDetail 
+        sala={salaActual} 
+        salas={salas}
+        onCerrar={() => setSalaSeleccionada(null)}
+        onCambiarSala={setSalaSeleccionada}
+        onEnviarComandoSala={onEnviarComandoSala}
+      />
+    );
+  }
 
   return (
-    <section className="flex flex-col h-full space-y-4">
-      {/* Barra Superior de Control de Cabina */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-zinc-800/80">
-        <div className="flex items-center gap-3">
-          <h2 className="text-base font-semibold text-zinc-100 flex items-center gap-2">
-            <Film className="w-4 h-4 text-sky-400" />
-            Control de Cabina
-          </h2>
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-zinc-900 border border-zinc-800 text-zinc-400">
-            {salasEnPlay} de {salas.length} en proyección
-          </span>
-        </div>
-
-        {/* Acciones globales */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={todasSeleccionadas ? onDeselectTodasSalas : onSelectTodasSalas}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 transition"
-          >
-            {todasSeleccionadas ? (
-              <CheckSquare className="w-3.5 h-3.5 text-sky-400" />
-            ) : (
-              <SquareIcon className="w-3.5 h-3.5 text-zinc-500" />
-            )}
-            <span>{todasSeleccionadas ? 'Deseleccionar' : 'Seleccionar todas'}</span>
+    <div className="flex flex-col gap-4">
+      {/* Top Bar Odeon Style */}
+      <div className="bg-[#121212] border border-zinc-800/80 text-zinc-100 px-4 py-3 flex items-center gap-4 text-sm font-semibold rounded-t-lg">
+        <span className="text-zinc-400 font-normal">Todos los servidores:</span>
+        <div className="flex bg-zinc-900 rounded-full p-1 border border-zinc-800">
+          <button className="px-4 py-1.5 bg-[#1a1a1a] text-zinc-100 rounded-full shadow-sm flex items-center gap-1.5 transition-colors">
+            <User className="w-4 h-4 text-cyan-400"/> Manual
+          </button>
+          <button className="px-4 py-1.5 text-zinc-500 hover:text-zinc-300 flex items-center gap-1.5 transition-colors">
+            <Clock className="w-4 h-4"/> Automático
           </button>
         </div>
       </div>
-
-      {/* Cuadrícula de Salas (Reproductor Minimalista por Sala) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3.5">
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 bg-[#0d0d0d] p-4 -mt-4 border border-t-0 border-zinc-800/80 rounded-b-lg">
         {salas.map((sala) => {
-          const isSelected = salasSeleccionadas.includes(sala.id);
           const isPlaying = sala.estado_reproduccion === 'PLAYING';
-          const isPaused = sala.estado_reproduccion === 'PAUSED';
-
-          const duracion = sala.duracion_total_min || 120;
-          const restante = sala.tiempo_restante_min || 0;
-          const actual = Math.max(0, duracion - restante);
-          const progreso = Math.min(100, Math.max(0, (actual / duracion) * 100));
-
-          const volumenActual = sala.volumen ?? 7.0;
-          const lucesModo = sala.estado_luces ?? (isPlaying ? 'CINE' : 'SALA');
-          const lamparaOn = sala.lampara_encendida;
+          const duracion = sala.duracion_total_min || 0;
+          const actual = sala.minutaje_actual_min || 0;
+          const pct = duracion > 0 ? Math.min(100, Math.max(0, (actual / duracion) * 100)) : 0;
+          const volumen = sala.volumen ?? 7.0;
+          
+          // Lógica Barra Amarilla de Luces
+          const isLucesOn = sala.luces_estado === 'ON';
+          const pbColor = isLucesOn ? 'bg-yellow-400' : 'bg-cyan-500';
+          
+          // Lógica del Reloj
+          const isAuto = sala.modo_automatico !== 0; // Default 1
 
           return (
-            <div
+            <div 
               key={sala.id}
-              onClick={() => onToggleSeleccionSala(sala.id)}
-              className={`relative flex flex-col justify-between rounded-xl p-3.5 transition-all duration-200 border cursor-pointer ${
-                isSelected
-                  ? 'bg-zinc-900/90 border-sky-500/80 shadow-[0_0_15px_rgba(14,165,233,0.12)] ring-1 ring-sky-500/40'
-                  : 'bg-[#14171e] border-zinc-800/80 hover:border-zinc-700/80 shadow-md'
-              }`}
+              onClick={() => setSalaSeleccionada(sala.id)}
+              className="bg-[#121212] border border-zinc-800 rounded-lg shadow-sm overflow-hidden cursor-pointer hover:border-cyan-500/50 hover:shadow-cyan-900/20 transition-all flex flex-col h-[155px]"
             >
-              {/* CABECERA: Sala y Estado */}
-              <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex flex-1">
+                {/* Left Poster Area */}
+                <div className="w-[80px] bg-[#1a1a1a] flex items-center justify-center border-r border-zinc-800">
+                   <div className="w-10 h-10 border-2 border-zinc-800 text-zinc-700 flex items-center justify-center rounded-sm">
+                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                   </div>
+                </div>
+                
+                {/* Right Content */}
+                <div className="flex-1 p-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-cyan-500 text-[#0d0d0d] flex items-center justify-center font-bold text-sm shadow-[0_0_8px_rgba(0,229,255,0.4)]">
+                        {sala.id}
+                      </div>
+                      <span className="text-zinc-100 text-sm font-semibold truncate w-24 tracking-wide">{sala.cpl_actual || '...'}</span>
+                    </div>
+                    {isAuto && <Clock className="w-4 h-4 text-zinc-500" />}
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="mt-3">
+                    <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden relative">
+                      <div className={`absolute top-0 left-0 h-full transition-all duration-1000 ${pbColor}`} style={{ width: `${pct}%` }}></div>
+                      {pct > 0 && (
+                        <div className="absolute top-0 w-1.5 h-1.5 bg-white -ml-1 transform rotate-45 shadow-[0_0_4px_rgba(255,255,255,0.8)]" style={{ left: `${pct}%` }}></div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-1.5">
+                     <div className="text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-1 py-0.5 rounded">00:00:00</div>
+                     <div className="text-[10px] font-mono text-zinc-500">-00:00:00/00:00:00</div>
+                  </div>
+                  
+                  <div className="text-[10px] text-zinc-400 mt-2 truncate font-medium">
+                    Próxima sesión a las 18:00
+                  </div>
+                </div>
+              </div>
+
+              {/* Volume Footer */}
+              <div 
+                className="bg-[#0f0f0f] border-t border-zinc-800 px-3 py-2 flex items-center justify-between"
+                onClick={(e) => e.stopPropagation()} // Evita abrir el detalle al pulsar volumen
+              >
+                <div className="flex items-center gap-1.5 text-zinc-400">
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-bold tracking-wider">CP750</span>
+                </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-black tracking-tight text-white">
-                    SALA {sala.id}
-                  </span>
-                  {sala.id === 1 && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                      Laser
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                  {/* Badge Estado */}
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
-                      isPlaying
-                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/50'
-                        : isPaused
-                        ? 'bg-amber-950 text-amber-300 border border-amber-700/50'
-                        : 'bg-zinc-800/80 text-zinc-400 border border-zinc-700/40'
-                    }`}
-                  >
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        isPlaying
-                          ? 'bg-emerald-400 animate-pulse'
-                          : isPaused
-                          ? 'bg-amber-400'
-                          : 'bg-zinc-500'
-                      }`}
-                    />
-                    {isPlaying ? 'PLAY' : isPaused ? 'PAUSA' : 'PARADA'}
-                  </span>
-
-                  {/* Botón Detalles Técnicos (Oculto/Discreto) */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setModalSalaId(sala.id);
-                    }}
-                    title="Detalles y configuración avanzada"
-                    className="p-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition"
-                  >
-                    <Settings2 className="w-3.5 h-3.5" />
-                  </button>
+                  <button onClick={() => onEnviarComandoSala(sala.id, 'volumen', volumen - 0.1)} className="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded flex items-center justify-center font-bold transition-colors">-</button>
+                  <span className="text-sm font-mono text-cyan-400 w-8 text-center">{volumen.toFixed(1)}</span>
+                  <button onClick={() => onEnviarComandoSala(sala.id, 'volumen', volumen + 0.1)} className="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded flex items-center justify-center font-bold transition-colors">+</button>
                 </div>
               </div>
 
-              {/* TÍTULO DE LA PELÍCULA */}
-              <div className="my-1">
-                <p
-                  className={`text-sm font-semibold truncate ${
-                    sala.cpl_actual ? 'text-zinc-100' : 'text-zinc-500 italic'
-                  }`}
-                  title={sala.cpl_actual || 'Sin sesión'}
-                >
-                  {limpiarTitulo(sala.cpl_actual)}
-                </p>
-              </div>
-
-              {/* BARRA DE PROGRESO Y MINUTAJE */}
-              <div className="my-2 space-y-1">
-                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                  <span className="font-semibold text-zinc-300">{formatTime(actual)}</span>
-                  <span className="text-zinc-500">-{formatTime(restante)}</span>
-                </div>
-
-                <div className="relative w-full h-1.5 bg-zinc-800/90 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      isPlaying ? 'bg-emerald-500' : isPaused ? 'bg-amber-500' : 'bg-zinc-700'
-                    }`}
-                    style={{ width: `${progreso}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* CONTROLES DE REPRODUCCIÓN (Poner / Pausar / Quitar) */}
-              <div
-                className="grid grid-cols-3 gap-1.5 pt-2 border-t border-zinc-800/80"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => onEnviarComandoSala?.(sala.id, 'play')}
-                  title="Poner (Reproducir)"
-                  className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold transition ${
-                    isPlaying
-                      ? 'bg-emerald-500 text-zinc-950 shadow-md'
-                      : 'bg-zinc-800 hover:bg-emerald-950/80 text-zinc-300 hover:text-emerald-300 border border-zinc-700/60'
-                  }`}
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Poner</span>
-                </button>
-
-                <button
-                  onClick={() => onEnviarComandoSala?.(sala.id, 'pause')}
-                  title="Pausar"
-                  className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold transition ${
-                    isPaused
-                      ? 'bg-amber-500 text-zinc-950 shadow-md'
-                      : 'bg-zinc-800 hover:bg-amber-950/80 text-zinc-300 hover:text-amber-300 border border-zinc-700/60'
-                  }`}
-                >
-                  <Pause className="w-3.5 h-3.5 fill-current" />
-                  <span>Pausa</span>
-                </button>
-
-                <button
-                  onClick={() => onEnviarComandoSala?.(sala.id, 'stop')}
-                  title="Quitar / Detener sesión"
-                  className="flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold bg-zinc-800 hover:bg-red-950/80 text-zinc-300 hover:text-red-300 border border-zinc-700/60 transition"
-                >
-                  <Square className="w-3.5 h-3.5 fill-current" />
-                  <span>Quitar</span>
-                </button>
-              </div>
-
-              {/* CONTROLES DE ENTORNO: VOLUMEN, LUCES Y LÁMPARA */}
-              <div
-                className="mt-2.5 pt-2 border-t border-zinc-800/60 flex items-center justify-between gap-1 text-xs"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Control de Volumen */}
-                <div className="flex items-center gap-1 bg-zinc-900/90 rounded-lg p-1 border border-zinc-800">
-                  <Volume2 className="w-3 h-3 text-zinc-400 ml-0.5" />
-                  <button
-                    onClick={() => onEnviarComandoSala?.(sala.id, 'volumen_bajar')}
-                    className="w-5 h-5 flex items-center justify-center rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold transition"
-                    title="Bajar volumen (-0.5)"
-                  >
-                    -
-                  </button>
-                  <span className="font-mono text-[11px] font-bold text-zinc-200 px-1 min-w-[32px] text-center">
-                    {volumenActual.toFixed(1)}
-                  </span>
-                  <button
-                    onClick={() => onEnviarComandoSala?.(sala.id, 'volumen_subir')}
-                    className="w-5 h-5 flex items-center justify-center rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold transition"
-                    title="Subir volumen (+0.5)"
-                  >
-                    +
-                  </button>
-                </div>
-
-                {/* Control de Luces */}
-                <button
-                  onClick={() => onEnviarComandoSala?.(sala.id, 'luces_toggle')}
-                  title="Cambiar luces (Cine / Sala / Limpieza)"
-                  className={`flex items-center gap-1 px-2 py-1 rounded-lg font-mono text-[11px] font-bold border transition ${
-                    lucesModo === 'SALA'
-                      ? 'bg-amber-500/10 text-amber-300 border-amber-500/40'
-                      : lucesModo === 'LIMPIEZA'
-                      ? 'bg-zinc-100 text-zinc-950 border-white'
-                      : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
-                  }`}
-                >
-                  <Lightbulb className="w-3 h-3" />
-                  <span>{lucesModo}</span>
-                </button>
-
-                {/* Control de Lámpara */}
-                <button
-                  onClick={() => onEnviarComandoSala?.(sala.id, 'lampara_toggle')}
-                  title={lamparaOn ? 'Apagar Lámpara' : 'Encender Lámpara'}
-                  className={`p-1 rounded-lg border transition ${
-                    lamparaOn
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
-                  }`}
-                >
-                  <Zap className="w-3.5 h-3.5 fill-current" />
-                </button>
-              </div>
             </div>
           );
         })}
       </div>
-
-      {/* Modal Técnico Avanzado (Solo se abre con el icono ⚙️) */}
-      {modalSalaId && (
-        <SalaControlModal
-          sala={salas.find((s) => s.id === modalSalaId)!}
-          onClose={() => setModalSalaId(null)}
-          onEnviarComando={onEnviarComandoSala || (() => {})}
-        />
-      )}
-    </section>
+    </div>
   );
-};
+}

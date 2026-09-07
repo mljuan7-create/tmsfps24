@@ -36,7 +36,13 @@ export class TMSService {
     const savedCola = localStorage.getItem(STORAGE_KEY_COLA);
     const savedKdms = localStorage.getItem(STORAGE_KEY_KDMS);
 
-    this.salas = savedSalas ? JSON.parse(savedSalas) : [...SALAS_INICIALES];
+    // Versión 2.0: Limpiar datos cacheados obsoletos si contienen películas de demo
+    if (savedSalas && (savedSalas.includes('CONAN29') || savedSalas.includes('GLADIATOR_II') || savedSalas.includes('DUNE_PART2'))) {
+      localStorage.removeItem(STORAGE_KEY_SALAS);
+    }
+
+    const currentSalas = localStorage.getItem(STORAGE_KEY_SALAS);
+    this.salas = currentSalas ? JSON.parse(currentSalas) : [...SALAS_INICIALES];
     this.cola = savedCola ? JSON.parse(savedCola) : [...COLA_INGESTAS_INICIAL];
     this.kdms = savedKdms ? JSON.parse(savedKdms) : [...KDMS_INICIALES];
   }
@@ -57,7 +63,7 @@ export class TMSService {
    */
   public async sincronizarConServidorReal(): Promise<Sala[]> {
     try {
-      const res = await fetch('/api/salas');
+      const res = await fetch('http://192.168.1.167:8000/api/salas');
       if (res.ok) {
         const salasBackend = await res.json();
         if (Array.isArray(salasBackend) && salasBackend.length > 0) {
