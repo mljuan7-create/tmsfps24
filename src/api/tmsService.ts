@@ -63,7 +63,7 @@ export class TMSService {
    */
   public async sincronizarConServidorReal(): Promise<Sala[]> {
     try {
-      const res = await fetch('http://192.168.1.167:8000/api/salas');
+      const res = await fetch('/api/salas');
       if (res.ok) {
         const salasBackend = await res.json();
         if (Array.isArray(salasBackend) && salasBackend.length > 0) {
@@ -401,13 +401,21 @@ export class TMSService {
     this.persist();
 
     // Enviar por red al backend de Python para emitir el SOAP al servidor de cine real
-    if (['play', 'pause', 'stop'].includes(comando)) {
-      fetch(`/api/salas/${salaId}/comando`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comando }),
-      }).catch(() => {});
+    
+    // Enviar TODO por red al backend
+    let cmdPayload = { comando: comando, valor: valorExtra };
+    if (comando === 'volumen_set') {
+        cmdPayload = { comando: 'volumen', valor: valorExtra };
+    } else if (comando === 'lampara_toggle') {
+        cmdPayload = { comando: sala.lampara_encendida ? 'lamp_on' : 'lamp_off' };
     }
+    
+    fetch(`/api/salas/${salaId}/comando`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cmdPayload),
+    }).catch((e) => console.error("Error API CMD:", e));
+
 
     return true;
   }
