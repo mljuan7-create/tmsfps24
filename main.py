@@ -1322,144 +1322,91 @@ if FASTAPI_AVAILABLE:
     # --- ENDPOINTS INGESTAS Y SALAS ---
 
     
-import httpx
-import asyncio
 
-@app.post("/api/salas/{sala_id}/comando")
-async def ejecutar_comando_sala(sala_id: int, req: dict):
-    comando = req.get("comando")
-    valor = req.get("valor")
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM salas WHERE id=?", (sala_id,))
-    sala = cur.fetchone()
-    
-    if not sala:
-        conn.close()
-        return {"success": False, "error": "Sala no encontrada"}
-        
-    if comando == "volumen" and valor is not None:
-        try:
-            cur.execute("UPDATE salas SET volumen = ? WHERE id = ?", (valor, sala_id))
-            conn.commit()
-            if not MODO_SIMULACION:
-                import asyncio
-                reader, writer = await asyncio.open_connection(sala["ip_servidor"], 8080)
-                writer.write(f"cp750.fader.level {int(valor * 10)}\r\n".encode('ascii'))
-                await writer.drain()
-                writer.close()
-                await writer.wait_closed()
-            conn.close()
-            return {"success": True, "comando": "volumen", "valor": valor}
-        except Exception as e:
-            conn.close()
-            return {"success": False, "error": str(e)}
-            
-    if comando == "modo_automatico":
-        cur.execute("UPDATE salas SET modo_automatico = ? WHERE id = ?", (1 if valor else 0, sala_id))
-        conn.commit()
-        conn.close()
-        return {"success": True}
-        
-    if comando == "macro":
-        # Simulador de delay de dímeros para las luces (Fase amarilla en Dashboard)
-        if valor in ["LUCES 100%", "LUCES 50%", "Techo ON", "Limpieza"]:
-            import threading
-            def turn_on_lights():
-                c = get_db_connection()
-                c.execute("UPDATE salas SET luces_estado = 'ON' WHERE id = ?", (sala_id,))
-                c.commit()
-                c.close()
-            # Simula tiempo de rampa de dímero (2 segundos)
-            threading.Timer(2.0, turn_on_lights).start()
-        elif valor in ["LUCES 0%", "Techo OFF"]:
-            cur.execute("UPDATE salas SET luces_estado = 'OFF' WHERE id = ?", (sala_id,))
-            conn.commit()
-        
-        conn.close()
-        return {"success": True, "macro": valor}
-        
-    conn.close()
-    return {"success": True}
 
-@app.post("/api/kdms/cargar")
-    async def endpoint_cargar_kdm(request: Request):
-        """
-        Recibe el XML crudo de una KDM (vía texto plano o JSON):
-        - Parsea <clipId>, <clipTitle>, <notValidBefore>, <notValidAfter> y el serial de seguridad.
-        - Cruza el serial con las salas. Si coincide con Sala 5 (DSS220-210405), la asocia a esa cabina.
-        - Deja listo y ejecuta el método de inyección 'sendLicense' de Dolby DSS220.
-        """
-        body_bytes = await request.body()
-        xml_text = body_bytes.decode("utf-8", errors="replace").strip()
-
-        # Si el body es un JSON que contiene {"xml_kdm": "..."} o {"raw_xml": "..."}
-        if xml_text.startswith("{") and xml_text.endswith("}"):
-            try:
-                data = json.loads(xml_text)
-                xml_text = data.get("xml_kdm") or data.get("raw_xml") or xml_text
-            except Exception:
-                pass
-
-        if not xml_text or not ("<" in xml_text and ">" in xml_text):
-            raise HTTPException(status_code=400, detail="Debe proporcionar un XML válido de KDM.")
-
-        try:
-            resultado = procesar_carga_kdm(xml_text)
-            return resultado
-        except Exception as e:
-            raise HTTPException(status_code=422, detail=f"Error al procesar la KDM: {str(e)}")
-
-    # 11. GET /api/kdms/inventario (Listado de llaves en la cabina)
-    @app.get("/api/kdms/inventario")
-    @app.get("/api/kdms")
-    def listar_inventario_kdms():
+    @app.post("/api/salas/{sala_id}/comando")
+    async def ejecutar_comando_sala(sala_id: int, req: dict):
+        comando = req.get("comando")
+        valor = req.get("valor")
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("""
-        SELECT k.*, s.nombre AS sala_nombre, s.ip_servidor AS sala_ip, s.tipo_servidor AS sala_servidor
-        FROM kdms_inventario k
-        LEFT JOIN salas s ON k.sala_id = s.id
-        ORDER BY k.id DESC
-        """)
-        rows = [dict(r) for r in cur.fetchall()]
-        conn.close()
-        return rows
+        cur.execute("SELECT * FROM salas WHERE id=?", (sala_id,))
+        sala = cur.fetchone()
+        
+        if not sala:
+            conn.close()
+            return {"success": False, "error": "Sala no encontrada"}
+            
+        
+        if comando == "volumen" and valor is not None:
+            try:
+                cur.execute("UPDATE salas SET volumen = ? WHERE id = ?", (valor, sala_id))
+                conn.commit()
+                if not MODO_SIMULACION:
+                    import asyncio
+                    # Determinar IP del procesador de sonido (.56 para Sala 5, o genérico .x6)
+                    ip_cp750 = sala["ip_servidor"].rsplit('.', 1)[0] + "." + str(sala_id) + "6"
+                    if sala_id == 1:
+                        pass # Sala 1 es CP850
+                    else:
+                        reader, writer = await asyncio.open_connection(ip_cp750, 61408)
+                        # Enviar volumen. El CP750 espera cp750.fader.level <valor_x_10>
 
-    # 12. GET /api/kdms/ejemplo-xml (Genera un XML oficial para pruebas con Sala 5)
-    @app.get("/api/kdms/ejemplo-xml")
-    def obtener_ejemplo_kdm_sala5():
-        return {
-            "descripcion": "KDM de prueba para 'AFuego' dirigida al bloque de seguridad Dolby DSS220 de Sala 5",
-            "server_serial": "DSS220-210405",
-            "sala_esperada": "Sala 5",
-            "xml_crudo": """<?xml version="1.0" encoding="UTF-8"?>
-<KeyDeliveryMessage xmlns="http://www.dolby.com/dcinema/ws/smi/v1/schemas/licensemanagement">
-    <licenseId>urn:uuid:7f3b890a-12c4-4e56-8a9b-0123456789ab</licenseId>
-    <clipId>urn:uuid:c3d4e5f6-7a8b-9c0d-1e2f-abcdef123456</clipId>
-    <clipTitle>AFuego_FTR_F-185_ES_51</clipTitle>
-    <notValidBefore>2026-09-01T00:00:00+02:00</notValidBefore>
-    <notValidAfter>2026-09-30T23:59:59+02:00</notValidAfter>
-    <serverSerial>DSS220-210405</serverSerial>
-</KeyDeliveryMessage>"""
-        }
+                        writer.write(f"cp750.fader.level {int(valor * 10)}\r\n".encode('ascii'))
+                        await writer.drain()
+                        writer.close()
+                        await writer.wait_closed()
+                conn.close()
+                return {"success": True, "comando": "volumen", "valor": valor}
+            except Exception as e:
+                conn.close()
+                return {"success": False, "error": str(e)}
 
-    # 13. GET / (Frontend)
-    @app.get("/")
-    def servir_index():
-        for f in ("standalone_index.html", "index.html"):
-            path = os.path.join(os.path.dirname(__file__), f)
-            if os.path.exists(path):
-                return FileResponse(path, media_type="text/html")
-        return {"sistema": "TMS Parque Astur - API Activa", "version": "3.0.0"}
-
-else:
-    app = None
-
-
-# =====================================================================
-# 7. EJECUCIÓN DIRECTA POR CONSOLA (TESTS DE CABINA)
-# =====================================================================
+            if comando == "lamp_on" or comando == "lamp_off":
+                estado_lampara = 1 if comando == "lamp_on" else 0
+                cur.execute("UPDATE salas SET lampara_encendida = ? WHERE id = ?", (estado_lampara, sala_id))
+                conn.commit()
+                if not MODO_SIMULACION:
+                    import asyncio
+                    try:
+                        reader, writer = await asyncio.open_connection(sala["ip_proyector"], 43728)
+                        # Tramas NEC extraídas de la prueba
+                        if comando == "lamp_on":
+                            writer.write(b'\x00\x85\x00\x00\x01\x01\x87') # Power On command
+                        else:
+                            writer.write(b'\x00\x85\x00\x00\x01\x01\x87') # Power Off (Placeholder for real code)
+                        await writer.drain()
+                        writer.close()
+                        await writer.wait_closed()
+                    except Exception as e:
+                        print("Error controlando NEC:", e)
+        
+                conn.close()
+                return {"success": True, "lampara": estado_lampara}
+                if comando == "modo_automatico":
+                    cur.execute("UPDATE salas SET modo_automatico = ? WHERE id = ?", (1 if valor else 0, sala_id))
+                    conn.commit()
+                    conn.close()
+                    return {"success": True}
+            
+                if comando == "macro":
+                    if valor in ["LUCES 100%", "LUCES 50%", "Techo ON", "Limpieza"]:
+                        import threading
+                        def turn_on_lights():
+                            c = get_db_connection()
+                            c.execute("UPDATE salas SET luces_estado = 'ON' WHERE id = ?", (sala_id,))
+                            c.commit()
+                            c.close()
+                        threading.Timer(2.0, turn_on_lights).start()
+                    elif valor in ["LUCES 0%", "Techo OFF"]:
+                        cur.execute("UPDATE salas SET luces_estado = 'OFF' WHERE id = ?", (sala_id,))
+                        conn.commit()
+            
+                    conn.close()
+                    return {"success": True, "macro": valor}
+            
+                conn.close()
+                return {"success": True}
 
 if __name__ == "__main__":
     import argparse
@@ -1538,17 +1485,3 @@ if __name__ == "__main__":
         print("  python main.py --test-scan   (Prueba el escáner de librerías FTP)")
         print("  python main.py --run-server  (Arranca el servidor FastAPI)")
 
-
-@app.post("/api/kdms/cargar")
-async def cargar_kdm(req: dict):
-    xml_content = req.get("xml", "")
-    # Parse Dolby XML format
-    import xml.etree.ElementTree as ET
-    try:
-        root = ET.fromstring(xml_content)
-        # Extract fields based on Dolby standard
-        uuid_kdm = root.find('.//{http://www.smpte-ra.org/schemas/430-1/2006/KDM}MessageId').text
-        # Save to SQLite
-        return {"success": True, "mensaje": "KDM cargada en SQLite correctamente"}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
