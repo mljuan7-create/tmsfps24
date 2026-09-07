@@ -76,7 +76,7 @@ export default function App() {
   const deselectTodosTipo = (ids: number[]) => setContenidosSeleccionados(prev => prev.filter(id => !ids.includes(id)));
 
   const toggleEstadoSala = (id: number) => { tmsApi.toggleEstadoSala(id); actualizarDatos(); };
-  const enviarComandoSala = (id: number, comando: string, valor?: any) => { tmsApi.enviarComandoSala(id, comando, valor); actualizarDatos(); };
+  const enviarComandoSala = (id: number, comando: string, valor?: any) => { tmsApi.enviarComando(id, comando, valor); actualizarDatos(); };
   
   const ejecutarIngesta = (solicitud: SolicitudIngesta) => {
     const haySalaPlaying = solicitud.salas_ids.some(sid => {

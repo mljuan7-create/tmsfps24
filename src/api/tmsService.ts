@@ -72,9 +72,9 @@ export class TMSService {
             return {
               ...actual,
               ...sb,
-              volumen: actual?.volumen ?? 7.0,
-              estado_luces: actual?.estado_luces ?? (sb.estado_reproduccion === 'PLAYING' ? 'CINE' : 'SALA'),
-              lampara_encendida: sb.lampara_encendida ?? actual?.lampara_encendida ?? true,
+              volumen: sb.volumen !== undefined ? sb.volumen : (actual?.volumen ?? 7.0),
+              estado_luces: sb.estado_luces !== undefined ? sb.estado_luces : (actual?.estado_luces ?? (sb.estado_reproduccion === 'PLAYING' ? 'CINE' : 'SALA')),
+              lampara_encendida: sb.lampara_encendida !== undefined ? sb.lampara_encendida : (actual?.lampara_encendida ?? true),
             };
           });
           this.persist();
