@@ -1285,6 +1285,32 @@ if FASTAPI_AVAILABLE:
     # --- ENDPOINTS FASE 2: LIBRERÍAS Y CONTENIDOS ---
 
     # 1. GET /api/librerias/contenido (REQUERIMIENTO TÉCNICO EXACTO)
+    
+    @app.get("/api/salas")
+    def get_salas():
+        conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM salas ORDER BY id ASC")
+        rows = cur.fetchall()
+        
+        salas = []
+        for row in rows:
+            sala_dict = dict(row)
+            # Add transient fields expected by the frontend
+            sala_dict["estado_reproduccion"] = "IDLE"
+            sala_dict["volumen"] = sala_dict.get("volumen", 7.0)
+            sala_dict["estado_luces"] = sala_dict.get("luces_estado", "SALA")
+            sala_dict["lampara_encendida"] = bool(sala_dict.get("lampara_encendida", False))
+            sala_dict["minutaje_actual_min"] = 0
+            sala_dict["tiempo_restante_min"] = 120
+            sala_dict["duracion_total_min"] = 120
+            sala_dict["spl_db"] = 85.0
+            salas.append(sala_dict)
+            
+        conn.close()
+        return salas
+
     @app.get("/api/librerias/contenido")
     def listar_contenido_librerias(simulacion: Optional[bool] = None):
         """
@@ -1407,6 +1433,24 @@ if FASTAPI_AVAILABLE:
             
                 conn.close()
                 return {"success": True}
+
+
+    import os
+    from fastapi.staticfiles import StaticFiles
+
+    # Serve the static assets
+    if os.path.exists("dist"):
+        app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
+        
+        @app.get("/{full_path:path}")
+        def serve_react_app(full_path: str):
+            if os.path.exists(f"dist/{full_path}") and os.path.isfile(f"dist/{full_path}"):
+                return FileResponse(f"dist/{full_path}")
+            return FileResponse("dist/index.html")
+    else:
+        @app.get("/{full_path:path}")
+        def no_dist(full_path: str):
+            return {"error": "The dist folder does not exist. Run 'npm run build' first."}
 
 if __name__ == "__main__":
     import argparse
